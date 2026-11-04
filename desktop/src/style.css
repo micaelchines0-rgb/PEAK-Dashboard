@@ -77,3 +77,15 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 .commands-center-bottom strong{font-size:17px}
 .commands-center-bottom .copy-compact{width:32px;height:32px;padding:7px}
 .columns{margin-top:0}
+
+/* Align the commands panel beside New Operation, not above the entire dashboard. */
+.right-col>.commands-top{margin-bottom:0;padding:12px 13px 9px}
+.right-col>.commands-top .commands-layout{grid-template-columns:minmax(0,1fr) minmax(135px,165px) minmax(0,1fr);gap:7px}
+.right-col>.commands-top .price-group{padding:8px 7px}
+.right-col>.commands-top .price-inputs{gap:3px}
+.right-col>.commands-top .price-inputs input{min-width:0;padding:4px 2px}
+.right-col>.commands-top .commands-center>input{font-size:10px}
+.right-col>.commands-top .commands-center>input::placeholder{font-size:9px}
+.right-col>.commands-top .commands-center-bottom{gap:5px}
+.right-col>.commands-top .commands-center-bottom strong{font-size:15px}
+.columns{align-items:start}
