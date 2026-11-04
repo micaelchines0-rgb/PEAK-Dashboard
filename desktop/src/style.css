@@ -127,3 +127,52 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 .left-col>.card.section:has(.calc-grid){min-height:155px}
 .left-col>.card.section::-webkit-resizer{background:linear-gradient(135deg,transparent 48%,#9e77ee 50%,#9e77ee 58%,transparent 60%);border-radius:2px}
 .left-col>.card.section:focus-within{border-color:#4a3a64}
+
+/* User-selected accent color and theme overrides. */
+.shell .btn.primary{background:var(--user-accent,#8558f3)}
+.shell .nav.active{color:var(--user-accent,#a66aff)}
+.shell .brand-mark{background:var(--user-accent,#8558f3)}
+.settings-modal{width:min(660px,94vw);max-height:90vh;display:flex;flex-direction:column;gap:12px}
+.settings-body{overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:0 3px 8px;min-height:0}
+.settings-body h4{margin:12px 0 0;font-size:13px;color:#b7a0ee}
+.settings-body label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:#aaa5b8;font-weight:700}
+.settings-body textarea{resize:vertical;min-height:58px;font-size:12px}
+.settings-body input[type=color]{height:39px;padding:4px;cursor:pointer}
+.settings-themes,.settings-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.settings-rates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.theme-choice{background:#1b1925;color:#d7d2e0;border:1px solid #40394e;border-radius:10px;padding:12px}
+.theme-choice.selected{border-color:var(--user-accent,#8558f3);box-shadow:inset 0 0 0 1px var(--user-accent,#8558f3)}
+.settings-actions{display:flex;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid #332d40}
+/* Light palette, scoped to the app so the dark theme remains untouched. */
+.shell.theme-light{background:#f2f4fa;color:#1c2031}
+.theme-light .sidebar{background:#fff;border-color:#dde0eb}
+.theme-light .brand strong,.theme-light .topbar h1,.theme-light h2,.theme-light h3,.theme-light h4{color:#202238}
+.theme-light .card{background:#fff;border-color:#dce0ea;box-shadow:0 8px 25px #27324a0b}
+.theme-light .nav{color:#54566b}
+.theme-light .nav.active{background:#f0eaff}
+.theme-light .sidebar-bottom{border-color:#e4e6ef;color:#52586a}
+.theme-light .icon-btn,.theme-light .btn.ghost{background:#f3f4f8;color:#38394e;border-color:#dfe1ea}
+.theme-light .btn.secondary{background:#f0eaff;color:#6c3bd0;border-color:#e1d3fa}
+.theme-light input,.theme-light textarea{background:#f8f9fc;color:#1c2031;border-color:#d7dbe6}
+.theme-light input::placeholder,.theme-light textarea::placeholder{color:#9095a7}
+.theme-light .price-group{background:#f8f9fc;border-color:#e0e3ed}
+.theme-light .metric-mini{background:#f8f9fc!important;border-color:#e2e5ef!important}
+.theme-light .metric-top,.theme-light .section-head .eyebrow,.theme-light .settings-body label,.theme-light .calc-grid label{color:#63677b!important}
+.theme-light .table-wrap{border-color:#e0e3ed}
+.theme-light th{background:#eef0f7;color:#545970}
+.theme-light td{border-color:#e8eaf1;color:#41465b}
+.theme-light td strong{color:#22283b}
+.theme-light tbody tr:hover{background:#f6f2ff}
+.theme-light .search{background:#f8f9fc;border-color:#dfe2ec}
+.theme-light .search input{background:transparent}
+.theme-light .column-resizer:hover span{background:var(--user-accent,#8558f3)}
+.theme-light .theme-choice{background:#f7f8fc;color:#32364c;border-color:#d9ddea}
+.theme-light .settings-actions{border-color:#e2e5ef}
+.theme-light .operation-net span,.theme-light .notes-card>small{color:#697084}
+.theme-light .metric strong,.theme-light .calc-grid strong{color:inherit}
+.theme-light .metric.blue strong{color:#286ee5}
+.theme-light .metric.amber strong{color:#a86a00}
+.theme-light .metric.purple strong{color:#7546c9}
+.theme-light .metric.green strong{color:#07845d}
+.theme-light .metric.red strong{color:#ca3454}
+.theme-light .btn.primary{color:#fff}
