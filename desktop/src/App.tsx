@@ -18,7 +18,7 @@ function App(){
  const splitRef=useRef<HTMLDivElement>(null);
  const dragging=useRef(false);
  const startSplit=(e:React.PointerEvent<HTMLDivElement>)=>{dragging.current=true;e.currentTarget.setPointerCapture(e.pointerId)};
- const moveSplit=(e:React.PointerEvent<HTMLDivElement>)=>{if(!dragging.current||!splitRef.current)return;const rect=splitRef.current.getBoundingClientRect();setSplitWidth(Math.max(280,Math.min(rect.width-420,e.clientX-rect.left-9)))};
+ const moveSplit=(e:React.PointerEvent<HTMLDivElement>)=>{if(!dragging.current||!splitRef.current)return;const rect=splitRef.current.getBoundingClientRect();setSplitWidth(Math.max(280,Math.min(rect.width-580,e.clientX-rect.left-9)))};
  const stopSplit=()=>{dragging.current=false};
  const resetSplit=()=>setSplitWidth(0);
  const refresh=async()=>{try{setOrders(await cmd<Order[]>('list_orders'))}catch(e){setMessage(String(e))}};
