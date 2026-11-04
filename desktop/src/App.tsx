@@ -45,13 +45,6 @@ function App(){
  </aside>
  <main className="main">
   <header className="topbar"><button className="icon-btn" title="Menu" onClick={()=>setSidebar(!sidebar)}><Menu size={19}/></button><div><div className="eyebrow">CENTRAL DE OPERAÇÕES</div><h1>Visão geral <span className="title-dot">.</span></h1></div><div className="top-actions"><span className="online"><span className="status-dot"/> Sistema local</span><button className="btn ghost" onClick={refresh}><RefreshCw size={16}/> Atualizar</button><button className="btn primary" onClick={closing}><FileSpreadsheet size={16}/> Fechamento diário</button></div></header>
-  <section className="card section commands-top"><div className="section-head"><div><span className="eyebrow">COMANDAS</span><h3>Dragão & Pinguim</h3></div></div>
-   <div className="commands-layout">
-    <div className="price-group"><h4 className="green">🐉 Dragão</h4><div className="price-inputs">{['D5','D7','D9','D11'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
-    <div className="commands-center"><input aria-label="Consultar sigla" value={sigla} onChange={e=>setSigla(e.target.value)} placeholder="CONSULTAR SIGLA (EX: 777)"/><span>Soma Total</span><div className="commands-center-bottom"><strong>{currency(priceTotal)}</strong><button className="btn primary copy-compact" title="Copiar PIX" aria-label="Copiar PIX" onClick={copyPix}><ClipboardCopy size={17}/></button></div></div>
-    <div className="price-group"><h4 className="blue">🐧 Pinguim</h4><div className="price-inputs">{['P6','P8'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
-   </div>
-  </section>
   <div className="columns" ref={splitRef} style={splitWidth?{gridTemplateColumns:"minmax(280px, "+splitWidth+"px) 12px minmax(420px, 1fr)"}:undefined}>
    <div className="left-col">
     <section className="card section"><div className="section-head"><div><span className="eyebrow">REGISTRO</span><h3>{selected?'Editar operação':'Nova operação'}</h3></div><span className="head-icon"><Plus size={19}/></span></div>
@@ -70,6 +63,14 @@ function App(){
    </div>
    <div className="column-resizer" role="separator" title="Arraste para ajustar a largura. Clique duas vezes para restaurar." onPointerDown={startSplit} onPointerMove={moveSplit} onPointerUp={stopSplit} onLostPointerCapture={stopSplit} onDoubleClick={resetSplit}><span/></div>
    <div className="right-col">
+  <section className="card section commands-top"><div className="section-head"><div><span className="eyebrow">COMANDAS</span><h3>Dragão & Pinguim</h3></div></div>
+   <div className="commands-layout">
+    <div className="price-group"><h4 className="green">🐉 Dragão</h4><div className="price-inputs">{['D5','D7','D9','D11'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
+    <div className="commands-center"><input aria-label="Consultar sigla" value={sigla} onChange={e=>setSigla(e.target.value)} placeholder="CONSULTAR SIGLA (EX: 777)"/><span>Soma Total</span><div className="commands-center-bottom"><strong>{currency(priceTotal)}</strong><button className="btn primary copy-compact" title="Copiar PIX" aria-label="Copiar PIX" onClick={copyPix}><ClipboardCopy size={17}/></button></div></div>
+    <div className="price-group"><h4 className="blue">🐧 Pinguim</h4><div className="price-inputs">{['P6','P8'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
+   </div>
+  </section>
+
   <section className="metrics metrics-in-column">
    {([{title:'Depósitos',value:totals.deposit,color:'blue',icon:ArrowDownToLine},{title:'Saques',value:totals.withdrawal,color:'amber',icon:ArrowUpFromLine},{title:'Blogueiras',value:totals.blogger,color:'purple',icon:Wallet},{title:'Lucro líquido',value:profit,color:profit<0?'red':'green',icon:Activity}] as const).map(x=><div className={'metric card '+x.color} key={x.title}><div className="metric-top"><span>{x.title}</span><x.icon size={19}/></div><strong>{currency(x.value)}</strong><small>Acumulado de operações</small></div>)}
   </section>
