@@ -12,7 +12,23 @@ function App(){
  const[orders,setOrders]=useState<Order[]>([]),[form,setForm]=useState<Input>(blank),[selected,setSelected]=useState<number|null>(null);
  const[notes,setNotes]=useState(''),[search,setSearch]=useState(''),[message,setMessage]=useState(''),[generator,setGenerator]=useState(false);
  const[genMin,setGenMin]=useState(11),[genMax,setGenMax]=useState(15),[genCount,setGenCount]=useState(10),[generated,setGenerated]=useState<number[]>([]);
- const[prices,setPrices]=useState<Record<string,number>>({}),[sigla,setSigla]=useState(''),[calc,setCalc]=useState(['','','','']);
+ const[prices,setPrices]=useState<Record<string,number>>({}),[sigla,setSigla]=useState(''),[calc,setCalc]=useState<string[][]>([['',''],['','']]);
+ const calcRefs=useRef<Record<string,HTMLInputElement|null>>({});
+ const updateCalc=(column:number,index:number,value:string)=>{
+  setCalc(previous=>previous.map((rows,c)=>{
+   if(c!==column)return rows;
+   const next=[...rows];next[index]=value;
+   while(next.length>2&&next[next.length-1]===''&&next[next.length-2]==='')next.pop();
+   return next;
+  }));
+ };
+ const nextCalc=(column:number,index:number)=>{
+  const rows=calc[column];
+  if(index===rows.length-1){
+   setCalc(previous=>previous.map((items,c)=>c===column?[...items,'']:items));
+  }
+  requestAnimationFrame(()=>calcRefs.current[column+':'+(index+1)]?.focus());
+ };
  const[sidebar,setSidebar]=useState(true);
  const[splitWidth,setSplitWidth]=useState(0);
  const splitRef=useRef<HTMLDivElement>(null);
@@ -54,7 +70,7 @@ function App(){
   <div className="columns" ref={splitRef} style={splitWidth?{gridTemplateColumns:"minmax(280px, "+splitWidth+"px) 12px minmax(420px, 1fr)"}:undefined}>
    <div className="left-col">
     <section className="card section notes-card"><div className="section-head"><div><span className="eyebrow">ANOTAÇÕES</span><h3>Bloco de notas</h3></div><button className="text-btn" onClick={()=>setNotes('')}>Limpar</button></div><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Suas anotações ficam salvas automaticamente..."/><small>↘ Arraste o canto inferior direito para redimensionar</small></section>
-    <section className="card section"><div className="section-head"><div><span className="eyebrow">FERRAMENTAS</span><h3>Calculadora rápida</h3></div></div><div className="calc-grid">{['Depósitos','Saques'].map((label,i)=><div key={label}><label>{label}</label><input placeholder="0,00" value={calc[i*2]} onChange={e=>setCalc(a=>a.map((v,j)=>j===i*2?e.target.value:v))}/><input placeholder="0,00" value={calc[i*2+1]} onChange={e=>setCalc(a=>a.map((v,j)=>j===i*2+1?e.target.value:v))}/><strong>{currency(number(calc[i*2])+number(calc[i*2+1]))}</strong></div>)}</div></section>
+    <section className="card section"><div className="section-head"><div><span className="eyebrow">FERRAMENTAS</span><h3>Calculadora rápida</h3></div></div><div className="calc-grid">{['Depósitos','Saques'].map((label,column)=><div className="calc-column" key={label}><label>{label}</label><div className="calc-scroll">{calc[column].map((value,index)=><input key={column+':'+index} ref={element=>{calcRefs.current[column+':'+index]=element}} placeholder="0,00" inputMode="decimal" value={value} onChange={e=>updateCalc(column,index,e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();nextCalc(column,index)}}}/>)}</div><strong>{currency(calc[column].reduce((sum,value)=>sum+number(value),0))}</strong></div>)}</div></div></section>
     <section className="card section"><div className="section-head"><div><span className="eyebrow">REGISTRO</span><h3>{selected?'Editar operação':'Nova operação'}</h3></div><span className="head-icon"><Plus size={19}/></span></div>
      <form onSubmit={save} className="form-grid">
       <label>Depósito (saída)<input type="number" step="0.01" min="0" value={form.deposit||''} onChange={e=>setForm({...form,deposit:Number(e.target.value)})} placeholder="0,00"/></label>
