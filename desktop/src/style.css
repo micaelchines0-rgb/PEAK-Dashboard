@@ -95,3 +95,6 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 .operation-net strong{font-family:Manrope,sans-serif;font-size:12px;font-weight:800;white-space:nowrap}
 .operation-net .net-positive{color:#35dca7}
 .operation-net .net-negative{color:#ff7089}
+
+/* A recognized sigla disables and visually dims the opposite command group. */
+.commands-layout .price-inputs input:disabled{opacity:.34;cursor:not-allowed;background:#17141d;border-color:#27232e;color:#797284}
