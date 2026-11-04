@@ -29,6 +29,7 @@
     "targets": [
       "nsis"
     ],
+    "icon": ["icons/icon.ico"],
     "shortDescription": "PEAK Dashboard — Controle financeiro",
     "windows": {
       "nsis": {
