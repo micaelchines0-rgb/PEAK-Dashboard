@@ -35,6 +35,7 @@ jobs:
         shell: pwsh
         run: |
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer.iss
+          Rename-Item "installer/PEAK_Dashboard_V10_Setup.exe" "PEAK_Dashboard_V10_1_Setup.exe"
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
