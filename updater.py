@@ -12,7 +12,7 @@ import urllib.request
 from pathlib import Path
 from tkinter import messagebox, simpledialog
 
-VERSION = '10.1.0'
+VERSION = '10.1.1'
 API = 'https://api.github.com/repos/{}/releases/latest'
 MAX_INSTALLER_BYTES = 250 * 1024 * 1024
 
@@ -56,8 +56,8 @@ def latest_release(repo):
     if not newer(tag):
         return None
     assets = data.get('assets') or []
-    exe = next((x for x in assets if x.get('name') in ('PEAK_Dashboard_V10_1_Setup.exe','PEAK_Dashboard_Setup.exe')), None)
-    digest = next((x for x in assets if x.get('name') in ('PEAK_Dashboard_V10_1_Setup.exe.sha256','PEAK_Dashboard_Setup.exe.sha256')), None)
+    exe = next((x for x in assets if x.get('name') in ('PEAK_Dashboard_V10_1_1_Setup.exe','PEAK_Dashboard_V10_1_Setup.exe','PEAK_Dashboard_Setup.exe')), None)
+    digest = next((x for x in assets if x.get('name') in ('PEAK_Dashboard_V10_1_1_Setup.exe.sha256','PEAK_Dashboard_V10_1_Setup.exe.sha256','PEAK_Dashboard_Setup.exe.sha256')), None)
     if not exe or not digest:
         raise ValueError('A versão nova precisa incluir o instalador EXE e seu arquivo .sha256.')
     for asset in (exe, digest):
@@ -71,7 +71,7 @@ def latest_release(repo):
 
 def download_and_verify(release):
     directory = Path(tempfile.mkdtemp(prefix='peak_update_'))
-    target = directory / 'PEAK_Dashboard_V10_1_Setup.exe'
+    target = directory / 'PEAK_Dashboard_V10_1_1_Setup.exe'
     with github_request(release['sha']) as response:
         checksum_text = response.read(4096).decode('utf-8', errors='replace').strip()
     match = re.search(r'\b[a-fA-F0-9]{64}\b', checksum_text)
