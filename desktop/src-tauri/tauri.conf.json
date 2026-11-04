@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PEAK Dashboard",
+  "version": "11.0.0",
+  "identifier": "com.peak.dashboard",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PEAK Dashboard — Midnight Black",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 960,
+        "minHeight": 650,
+        "backgroundColor": "#0b0b10"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "icon": ["icons/icon.ico"],
+    "shortDescription": "PEAK Dashboard — Controle financeiro",
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": false
+      }
+    }
+  }
+}
