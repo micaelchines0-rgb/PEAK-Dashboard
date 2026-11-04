@@ -45,7 +45,14 @@ function App(){
  </aside>
  <main className="main">
   <header className="topbar"><button className="icon-btn" title="Menu" onClick={()=>setSidebar(!sidebar)}><Menu size={19}/></button><div><div className="eyebrow">CENTRAL DE OPERAÇÕES</div><h1>Visão geral <span className="title-dot">.</span></h1></div><div className="top-actions"><span className="online"><span className="status-dot"/> Sistema local</span><button className="btn ghost" onClick={refresh}><RefreshCw size={16}/> Atualizar</button><button className="btn primary" onClick={closing}><FileSpreadsheet size={16}/> Fechamento diário</button></div></header>
-  <section className="card section commands-top"><div className="section-head"><div><span className="eyebrow">COMANDAS</span><h3>Dragão & Pinguim</h3></div><button className="btn secondary" onClick={copyPix}><ClipboardCopy size={16}/> Copiar PIX</button></div><div className="price-groups">{[{name:'🐉 Dragão',types:['D5','D7','D9','D11'],color:'green'},{name:'🐧 Pinguim',types:['P6','P8'],color:'blue'}].map(g=><div key={g.name} className="price-group"><h4 className={g.color}>{g.name}</h4><div className="price-inputs">{g.types.map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>)}</div><div className="price-footer"><label>Sigla<input value={sigla} onChange={e=>setSigla(e.target.value)} placeholder="Sigla"/></label><div><small>TOTAL DA COMANDA</small><strong>{currency(priceTotal)}</strong></div></div></section>
+  <section className="card section commands-top"><div className="section-head"><div><span className="eyebrow">COMANDAS</span><h3>Dragão & Pinguim</h3></div></div>
+   <div className="commands-layout">
+    <div className="price-group"><h4 className="green">🐉 Dragão</h4><div className="price-inputs">{['D5','D7','D9','D11'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
+    <label className="sigla-center">Sigla<input value={sigla} onChange={e=>setSigla(e.target.value)} placeholder="Sigla"/></label>
+    <div className="price-group"><h4 className="blue">🐧 Pinguim</h4><div className="price-inputs">{['P6','P8'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
+   </div>
+   <div className="command-total"><small>TOTAL DA COMANDA</small><strong>{currency(priceTotal)}</strong><button className="btn secondary" onClick={copyPix}><ClipboardCopy size={16}/> Copiar PIX</button></div>
+  </section>
   <div className="columns" ref={splitRef} style={splitWidth?{gridTemplateColumns:"minmax(280px, "+splitWidth+"px) 12px minmax(420px, 1fr)"}:undefined}>
    <div className="left-col">
     <section className="card section"><div className="section-head"><div><span className="eyebrow">REGISTRO</span><h3>{selected?'Editar operação':'Nova operação'}</h3></div><span className="head-icon"><Plus size={19}/></span></div>
