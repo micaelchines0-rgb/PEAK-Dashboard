@@ -102,7 +102,7 @@ class UpdateController:
         self.running = False
 
     def configure(self):
-        current = self.app.cfg.get('github_repo', '')
+        current = self.app.cfg.get('github_repo', 'micaelchines0-rgb/PEAK-Dashboard')
         value = simpledialog.askstring('Atualizações PEAK',
             'Repositório público do GitHub (usuario/repositorio):',
             initialvalue=current, parent=self.app)
