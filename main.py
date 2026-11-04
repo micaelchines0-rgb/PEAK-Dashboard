@@ -77,11 +77,18 @@ class Peak(tk.Tk):
         self.notes.pack(fill="x",padx=10,pady=(0,9))
         self.notes.insert("1.0",self.getmeta("notes"))
         self.notes.bind("<KeyRelease>",lambda e:self.save_note())
-        # Drag only the bottom edge of the notes panel, vertically.
-        grip=tk.Frame(self.notes_panel,height=6,bg="#252c36",cursor="sb_v_double_arrow")
-        grip.pack(fill="x",side="bottom")
-        grip.bind("<Button-1>",lambda e:setattr(self,"note_drag_y",e.y_root))
-        grip.bind("<B1-Motion>",self.resize_notes)
+        # Visible resize handle, with movement measured from drag start.
+        grip=tk.Frame(self.notes_panel,height=20,bg="#242031",cursor="sb_v_double_arrow")
+        grip.pack(fill="x",side="bottom",padx=10,pady=(0,5))
+        grip.pack_propagate(False)
+        handle=tk.Label(grip,text="⋮⋮  ARRASTE PARA REDIMENSIONAR  ⋮⋮",
+                        bg="#242031",fg="#a99bbb",font=(FONT,8,"bold"),
+                        cursor="sb_v_double_arrow")
+        handle.pack(fill="both",expand=True)
+        for widget in (grip,handle):
+            widget.bind("<ButtonPress-1>",self.start_resize_notes)
+            widget.bind("<B1-Motion>",self.resize_notes)
+            widget.bind("<ButtonRelease-1>",self.end_resize_notes)
         calc=self.frame(self.left);calc.pack(fill="x",pady=(0,8))
         self.heading(calc,"▦  Calculadora de Soma",PURPLE)
         pair=tk.Frame(calc,bg=PANEL);pair.pack(fill="x",padx=10)
@@ -156,10 +163,20 @@ class Peak(tk.Tk):
     def setmeta(self,k,v):
         self.conn.execute("INSERT INTO meta(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v",(k,v));self.conn.commit()
     def save_note(self):self.setmeta("notes",self.notes.get("1.0","end-1c"))
+    def start_resize_notes(self,e):
+        self.note_drag_start_y=e.y_root
+        self.note_drag_start_rows=int(self.notes.cget("height"))
     def resize_notes(self,e):
-        dy=e.y_root-self.note_drag_y;self.note_drag_y=e.y_root
-        new=max(3,min(23,int(self.notes.cget("height"))+round(dy/17)))
-        self.notes.config(height=new);self.cfg["note_rows"]=new;save_settings(self.cfg)
+        if not hasattr(self,"note_drag_start_y"): return
+        dy=e.y_root-self.note_drag_start_y
+        new=max(3,min(28,self.note_drag_start_rows+round(dy/19)))
+        if new!=int(self.notes.cget("height")):
+            self.notes.config(height=new)
+            self.cfg["note_rows"]=new
+    def end_resize_notes(self,e):
+        if hasattr(self,"note_drag_start_y"):
+            del self.note_drag_start_y
+            self.save_app_config()
     def restore_split(self):
         try:self.split.sashpos(0,int(self.cfg.get("split",365)))
         except:pass
