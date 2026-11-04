@@ -55,3 +55,8 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 .top-actions{gap:7px}
 .top-actions .btn{padding:8px 11px;font-size:11px}
 .top-actions .online{font-size:11px;margin-right:6px}
+
+/* Show the resize handle only while the pointer is over the divider. */
+.column-resizer{background:transparent}
+.column-resizer span{opacity:0;background:#a17ae9;box-shadow:none;transition:opacity .18s ease,background .18s ease,box-shadow .18s ease}
+.column-resizer:hover span,.column-resizer:active span{opacity:1;background:#c6a6ff;box-shadow:0 0 16px #a77bffaa}
