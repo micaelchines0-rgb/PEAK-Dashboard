@@ -89,3 +89,9 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 .right-col>.commands-top .commands-center-bottom{gap:5px}
 .right-col>.commands-top .commands-center-bottom strong{font-size:15px}
 .columns{align-items:start}
+
+/* Small live net balance at the lower-right of the operation form. */
+.operation-net{display:flex;align-items:center;justify-content:flex-end;gap:9px;margin-top:10px;font-size:10px;color:#8f899e}
+.operation-net strong{font-family:Manrope,sans-serif;font-size:12px;font-weight:800;white-space:nowrap}
+.operation-net .net-positive{color:#35dca7}
+.operation-net .net-negative{color:#ff7089}
