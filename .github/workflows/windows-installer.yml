@@ -35,10 +35,14 @@ jobs:
         shell: pwsh
         run: |
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer.iss
-          Rename-Item "installer/PEAK_Dashboard_Setup.exe" "PEAK_Dashboard_V10_1_Setup.exe"
+          $file = "installer/PEAK_Dashboard_V10_1_Setup.exe"
+          $hash = (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  PEAK_Dashboard_V10_1_Setup.exe" | Set-Content -Encoding ascii "$file.sha256"
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: PEAK-Dashboard-Windows-Setup
-          path: installer/PEAK_Dashboard_V10_1_Setup.exe
+          path: |
+            installer/PEAK_Dashboard_V10_1_Setup.exe
+            installer/PEAK_Dashboard_V10_1_Setup.exe.sha256
           if-no-files-found: error
