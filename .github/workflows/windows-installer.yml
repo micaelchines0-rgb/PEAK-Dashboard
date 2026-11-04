@@ -27,7 +27,7 @@ jobs:
       - name: Build application EXE
         shell: pwsh
         run: |
-          pyinstaller --noconfirm --clean --onefile --windowed --name "PEAK Dashboard" --icon PEAK.ico --add-data "PEAK.ico;." --collect-all openpyxl main.py
+          pyinstaller --noconfirm --clean --onefile --windowed --name "PEAK Dashboard" --icon PEAK.ico --add-data "PEAK.ico;." --collect-all openpyxl --collect-all customtkinter main.py
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup -y --no-progress
