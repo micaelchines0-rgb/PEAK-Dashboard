@@ -32,3 +32,16 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 .left-col .notes-card textarea{min-height:75px;height:105px}
 .right-col .records{min-height:560px}
 @media(max-width:1200px){.columns{grid-template-columns:minmax(260px,.62fr) 12px minmax(580px,1.85fr)}}
+
+.commands-layout{display:grid;grid-template-columns:minmax(0,1fr) 200px minmax(0,1fr);gap:12px;align-items:stretch}
+.commands-layout .price-group{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:13px}
+.commands-layout .price-group h4{text-align:center;margin-bottom:12px}
+.commands-layout .price-inputs{flex-wrap:nowrap}
+.commands-layout .price-inputs label{min-width:0;text-align:center}
+.commands-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-width:0;text-align:center}
+.commands-center>input{width:100%;text-align:center;padding:10px 5px;font-size:11px}
+.commands-center>input::placeholder{font-size:10px}
+.commands-center>span{color:#a7bfff;font-size:12px}
+.commands-center-bottom{display:flex;align-items:center;gap:9px}
+.commands-center-bottom strong{font-size:19px;white-space:nowrap}
+.copy-compact{width:39px;height:39px;padding:9px}
