@@ -61,7 +61,7 @@ fn export_closing()->Result<String,String>{
  let mut csv=String::from("\u{feff}Data;Nome da cliente;Telefone;Link;Depósito;Saque;Blogueira;Lucro líquido\r\n");
  for r in rows.iter().rev(){
   let q=|s:&str|format!("\"{}\"",s.replace('"',"\"\"").replace('\r'," ").replace('\n'," "));
-  csv.push_str(&format!("{};{};{};{};{:.2};{:.2};{:.2};{:.2}\r\n",q(&r.created),q(&r.client),q(&r.phone),q(&r.link),r.deposit,r.withdrawal,r.blogger,r.withdrawal+r.blogger-r.deposit).replace('.',","));
+  csv.push_str(&format!("{};{};{};{};{:.2};{:.2};{:.2};{:.2}\r\n",q(&r.created),q(&r.client),q(&r.phone),q(&r.link),r.deposit,r.withdrawal,r.blogger,r.withdrawal+r.blogger-r.deposit));
  }
  fs::write(&file,csv).map_err(|e|e.to_string())?;
  let tx=c.transaction().map_err(|e|e.to_string())?;
