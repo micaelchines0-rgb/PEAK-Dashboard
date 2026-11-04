@@ -98,3 +98,17 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 
 /* A recognized sigla disables and visually dims the opposite command group. */
 .commands-layout .price-inputs input:disabled{opacity:.34;cursor:not-allowed;background:#17141d;border-color:#27232e;color:#797284}
+
+/* Compact horizontal financial KPIs: preserve space for registered orders. */
+.right-col .metrics-in-column{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0}
+.right-col .metric-mini{min-width:0;padding:10px 11px;background:#101016;border:1px solid #1c1b26;border-radius:9px;box-shadow:none}
+.right-col .metric-mini .metric-top{display:flex;justify-content:flex-start;gap:6px;align-items:center;margin:0 0 3px;color:#bbb7ca;font-size:10px;line-height:1.2}
+.right-col .metric-mini .metric-dot{display:inline-block;flex:0 0 6px;width:6px;height:6px;border-radius:50%;background:currentColor}
+.right-col .metric-mini.blue .metric-dot{color:#589aff}
+.right-col .metric-mini.amber .metric-dot{color:#ffbf59}
+.right-col .metric-mini.purple .metric-dot{color:#b48aff}
+.right-col .metric-mini.green .metric-dot{color:#35dca7}
+.right-col .metric-mini.red .metric-dot{color:#ff7089}
+.right-col .metric-mini strong{font-family:Manrope,sans-serif;font-size:clamp(12px,1.15vw,19px);line-height:1.2;letter-spacing:-.4px}
+.right-col{gap:10px}
+@media(max-width:1050px){.right-col .metrics-in-column{gap:5px}.right-col .metric-mini{padding:8px 6px}.right-col .metric-mini strong{font-size:12px}}
