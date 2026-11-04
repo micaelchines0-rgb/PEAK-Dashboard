@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - migration/react-tauri
+      - main
   workflow_dispatch:
 
 permissions:
