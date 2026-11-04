@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {invoke} from '@tauri-apps/api/core';
 import {Activity,ArrowDownToLine,ArrowUpFromLine,Check,ClipboardCopy,Database,Download,FileSpreadsheet,Menu,Plus,RefreshCw,Save,Search,Settings2,Shuffle,Trash2,Wallet,X} from 'lucide-react';
 
@@ -14,6 +14,13 @@ function App(){
  const[genMin,setGenMin]=useState(11),[genMax,setGenMax]=useState(15),[genCount,setGenCount]=useState(10),[generated,setGenerated]=useState<number[]>([]);
  const[prices,setPrices]=useState<Record<string,number>>({}),[sigla,setSigla]=useState(''),[calc,setCalc]=useState(['','','','']);
  const[sidebar,setSidebar]=useState(true);
+ const[splitWidth,setSplitWidth]=useState(0);
+ const splitRef=useRef<HTMLDivElement>(null);
+ const dragging=useRef(false);
+ const startSplit=(e:React.PointerEvent<HTMLDivElement>)=>{dragging.current=true;e.currentTarget.setPointerCapture(e.pointerId)};
+ const moveSplit=(e:React.PointerEvent<HTMLDivElement>)=>{if(!dragging.current||!splitRef.current)return;const rect=splitRef.current.getBoundingClientRect();setSplitWidth(Math.max(280,Math.min(rect.width-420,e.clientX-rect.left-9)))};
+ const stopSplit=()=>{dragging.current=false};
+ const resetSplit=()=>setSplitWidth(0);
  const refresh=async()=>{try{setOrders(await cmd<Order[]>('list_orders'))}catch(e){setMessage(String(e))}};
  useEffect(()=>{refresh();cmd<string>('get_notes').then(setNotes).catch(e=>setMessage(String(e)))},[]);
  useEffect(()=>{const timer=setTimeout(()=>cmd('set_notes',{text:notes}).catch(e=>setMessage(String(e))),700);return()=>clearTimeout(timer)},[notes]);
@@ -42,7 +49,7 @@ function App(){
   <section className="metrics">
    {([{title:'Depósitos',value:totals.deposit,color:'blue',icon:ArrowDownToLine},{title:'Saques',value:totals.withdrawal,color:'amber',icon:ArrowUpFromLine},{title:'Blogueiras',value:totals.blogger,color:'purple',icon:Wallet},{title:'Lucro líquido',value:profit,color:profit<0?'red':'green',icon:Activity}] as const).map(x=><div className={'metric card '+x.color} key={x.title}><div className="metric-top"><span>{x.title}</span><x.icon size={19}/></div><strong>{currency(x.value)}</strong><small>Acumulado de operações</small></div>)}
   </section>
-  <div className="columns">
+  <div className="columns" ref={splitRef} style={splitWidth?{gridTemplateColumns:"minmax(280px, "+splitWidth+"px) 12px minmax(420px, 1fr)"}:undefined}>
    <div className="left-col">
     <section className="card section"><div className="section-head"><div><span className="eyebrow">REGISTRO</span><h3>{selected?'Editar operação':'Nova operação'}</h3></div><span className="head-icon"><Plus size={19}/></span></div>
      <form onSubmit={save} className="form-grid">
@@ -58,6 +65,7 @@ function App(){
     <section className="card section"><div className="section-head"><div><span className="eyebrow">FERRAMENTAS</span><h3>Calculadora rápida</h3></div></div><div className="calc-grid">{['Depósitos','Saques'].map((label,i)=><div key={label}><label>{label}</label><input placeholder="0,00" value={calc[i*2]} onChange={e=>setCalc(a=>a.map((v,j)=>j===i*2?e.target.value:v))}/><input placeholder="0,00" value={calc[i*2+1]} onChange={e=>setCalc(a=>a.map((v,j)=>j===i*2+1?e.target.value:v))}/><strong>{currency(number(calc[i*2])+number(calc[i*2+1]))}</strong></div>)}</div></section>
     <section className="card section notes-card"><div className="section-head"><div><span className="eyebrow">ANOTAÇÕES</span><h3>Bloco de notas</h3></div><button className="text-btn" onClick={()=>setNotes('')}>Limpar</button></div><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Suas anotações ficam salvas automaticamente..."/><small>↘ Arraste o canto inferior direito para redimensionar</small></section>
    </div>
+   <div className="column-resizer" role="separator" title="Arraste para ajustar a largura. Clique duas vezes para restaurar." onPointerDown={startSplit} onPointerMove={moveSplit} onPointerUp={stopSplit} onLostPointerCapture={stopSplit} onDoubleClick={resetSplit}><span/></div>
    <div className="right-col">
     <section className="card section"><div className="section-head"><div><span className="eyebrow">COMANDAS</span><h3>Dragão & Pinguim</h3></div><button className="btn secondary" onClick={copyPix}><ClipboardCopy size={16}/> Copiar PIX</button></div><div className="price-groups">{[{name:'🐉 Dragão',types:['D5','D7','D9','D11'],color:'green'},{name:'🐧 Pinguim',types:['P6','P8'],color:'blue'}].map(g=><div key={g.name} className="price-group"><h4 className={g.color}>{g.name}</h4><div className="price-inputs">{g.types.map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>)}</div><div className="price-footer"><label>Sigla<input value={sigla} onChange={e=>setSigla(e.target.value)} placeholder="Sigla"/></label><div><small>TOTAL DA COMANDA</small><strong>{currency(priceTotal)}</strong></div></div></section>
     <section className="card section records"><div className="section-head"><div><span className="eyebrow">HISTÓRICO</span><h3>Pedidos registrados <span className="count">{orders.length}</span></h3></div><div className="search"><Search size={16}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar cliente..."/></div></div><div className="table-wrap"><table><thead><tr><th>Cliente</th><th>Link</th><th>Depósito</th><th>Saque</th><th>Blogueira</th><th>Lucro</th><th></th></tr></thead><tbody>{filtered.map(o=><tr key={o.id}><td><strong>{o.client}</strong><small>{o.phone}</small></td><td className="link-cell">{o.link}</td><td>{currency(o.deposit)}</td><td>{currency(o.withdrawal)}</td><td>{currency(o.blogger)}</td><td className={o.withdrawal+o.blogger-o.deposit>=0?'green':'red'}>{currency(o.withdrawal+o.blogger-o.deposit)}</td><td><div className="row-actions"><button title="Editar" onClick={()=>edit(o)}><Settings2 size={15}/></button><button title="Excluir" onClick={()=>remove(o.id)}><Trash2 size={15}/></button></div></td></tr>)}{!filtered.length&&<tr><td colSpan={7} className="empty">Nenhuma operação encontrada.</td></tr>}</tbody></table></div></section>
