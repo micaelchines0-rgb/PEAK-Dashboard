@@ -7,7 +7,7 @@ APP_DIR=Path(os.getenv("APPDATA") or (Path.home()/".local/share"))/"PEAK_Dashboa
 APP_DIR.mkdir(parents=True,exist_ok=True)
 DB=APP_DIR/"peak.sqlite3"
 SETTINGS=APP_DIR/"settings.json"
-BG="#080a0e"; PANEL="#15191f"; FIELD="#0d1117"; FG="#f2f6fc"; MUTED="#9baabd"; BLUE="#60baff"; GREEN="#31e59d"; RED="#ff6075"
+BG="#0b0b10"; PANEL="#15151d"; FIELD="#0d0d14"; FG="#f3f1fb"; MUTED="#9b9ab3"; BLUE="#428dff"; GREEN="#00d98a"; RED="#ff697b"; PURPLE="#a66aff"; GOLD="#ffba38"; FONT="Trebuchet MS"
 def money(v): return f"R$ {v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
 def num(s):
     s=str(s).strip().replace("R$","").replace(" ","")
@@ -28,48 +28,51 @@ class Peak(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title(f"PEAK Dashboard V{VERSION} — Midnight Black")
-        self.geometry("1270x790");self.minsize(890,580);self.configure(bg=BG)
+        self.geometry("1370x840");self.minsize(940,620);self.configure(bg=BG)
+        try:
+            self.iconbitmap(str(Path(getattr(sys,"_MEIPASS",Path(__file__).parent))/"PEAK.ico"))
+        except Exception: pass
         self.conn=db();self.cfg=settings();self.inputs={}
         self.style=ttk.Style(self);self.style.theme_use("clam")
-        self.style.configure("Treeview",background=FIELD,foreground=FG,fieldbackground=FIELD,rowheight=29,borderwidth=0)
-        self.style.configure("Treeview.Heading",background="#242a34",foreground=FG,relief="flat")
-        self.style.map("Treeview",background=[("selected","#24466b")])
+        self.style.configure("Treeview",background=FIELD,foreground=FG,fieldbackground=FIELD,rowheight=34,borderwidth=0,font=(FONT,10))
+        self.style.configure("Treeview.Heading",background="#23212e",foreground="#d8d1f5",relief="flat",font=(FONT,10,"bold"))
+        self.style.map("Treeview",background=[("selected","#383051")])
         self.style.configure("TPanedwindow",background=BG)
         self.make_ui();self.refresh()
         self.updater = UpdateController(self)
         self.after(1500, lambda: self.updater.check(manual=False))
         self.protocol("WM_DELETE_WINDOW",self.close)
     def label(self,parent,text,color=FG,size=10,bold=False,**kw):
-        return tk.Label(parent,text=text,bg=parent.cget("bg"),fg=color,font=("Segoe UI",size,"bold" if bold else "normal"),**kw)
+        return tk.Label(parent,text=text,bg=parent.cget("bg"),fg=color,font=(FONT,size,"bold" if bold else "normal"),**kw)
     def frame(self,parent,pad=10):
-        f=tk.Frame(parent,bg=PANEL,highlightbackground="#2b313b",highlightthickness=1)
+        f=tk.Frame(parent,bg=PANEL,highlightbackground="#302c3b",highlightthickness=1)
         return f
     def btn(self,p,text,cmd,accent=False):
-        return tk.Button(p,text=text,command=cmd,bg="#1974c7" if accent else "#252c37",fg="white",activebackground="#368ed7",activeforeground="white",bd=0,padx=10,pady=6,font=("Segoe UI",9,"bold"),cursor="hand2")
+        return tk.Button(p,text=text,command=cmd,bg="#5b3fcb" if accent else "#272432",fg="white",activebackground="#795cf0",activeforeground="white",bd=0,padx=10,pady=6,font=(FONT,9,"bold"),cursor="hand2")
     def entry(self,p,width=12):
-        return tk.Entry(p,bg=FIELD,fg=FG,insertbackground=FG,relief="flat",highlightbackground="#333b48",highlightthickness=1,font=("Segoe UI",10),width=width)
+        return tk.Entry(p,bg=FIELD,fg=FG,insertbackground=FG,relief="flat",highlightbackground="#393346",highlightthickness=1,font=(FONT,10),width=width)
     def heading(self,p,title,color=BLUE):
         self.label(p,title,color,11,True).pack(anchor="w",padx=10,pady=(8,7))
     def make_ui(self):
-        head=tk.Frame(self,bg="#0e1116",height=51);head.pack(fill="x");head.pack_propagate(False)
-        self.label(head,"▲  PEAK",BLUE,12,True).pack(side="left",padx=(16,13))
+        head=tk.Frame(self,bg="#111019",height=54);head.pack(fill="x");head.pack_propagate(False)
+        self.label(head,"▲  PEAK",PURPLE,13,True).pack(side="left",padx=(16,13))
         self.label(head,"Grupo das Blogueiras  ·  Controle financeiro",FG,11,True).pack(side="left")
         self.clock=self.label(head,"",MUTED,9);self.clock.pack(side="right",padx=16);self.tick()
         toolbar=tk.Frame(self,bg=BG);toolbar.pack(fill="x",padx=10,pady=8)
-        self.btn(toolbar,"▣  Gerador de depósitos",self.generator,True).pack(side="left")
-        self.btn(toolbar,"Verificar atualizações",lambda:self.updater.check(manual=True)).pack(side="left",padx=6)
-        self.btn(toolbar,"Configurar GitHub",lambda:self.updater.configure()).pack(side="left")
+        self.btn(toolbar,"🎲",self.generator,True).pack(side="left")
+        self.btn(toolbar,"↻  Atualizações",lambda:self.updater.check(manual=True)).pack(side="left",padx=6)
+        self.btn(toolbar,"⚙  GitHub",lambda:self.updater.configure()).pack(side="left")
         self.btn(toolbar,"Fechamento diário (Excel)",self.closing).pack(side="right")
-        self.btn(toolbar,"Abrir pasta de dados",self.open_folder).pack(side="right",padx=6)
+        self.btn(toolbar,"▣  Dados",self.open_folder).pack(side="right",padx=6)
         self.split=ttk.Panedwindow(self,orient="horizontal");self.split.pack(fill="both",expand=True,padx=10,pady=(0,10))
         self.left=tk.Frame(self.split,bg=BG);self.right=tk.Frame(self.split,bg=BG)
         self.split.add(self.left,weight=2);self.split.add(self.right,weight=5)
         self.after(180,lambda:self.restore_split())
         self.notes_panel=self.frame(self.left);self.notes_panel.pack(fill="x",pady=(0,8))
         bar=tk.Frame(self.notes_panel,bg=PANEL);bar.pack(fill="x",padx=10,pady=(7,3))
-        self.label(bar,"▤  Bloco de Notas",BLUE,10,True).pack(side="left")
+        self.label(bar,"▤  Bloco de Notas",PURPLE,10,True).pack(side="left")
         self.btn(bar,"Limpar",lambda:(self.notes.delete("1.0","end"),self.save_note())).pack(side="right")
-        self.notes=tk.Text(self.notes_panel,height=5,bg=FIELD,fg=FG,insertbackground=FG,relief="flat",font=("Segoe UI",10),wrap="word",undo=True)
+        self.notes=tk.Text(self.notes_panel,height=5,bg=FIELD,fg=FG,insertbackground=FG,relief="flat",font=(FONT,10),wrap="word",undo=True)
         self.notes.pack(fill="x",padx=10,pady=(0,9))
         self.notes.insert("1.0",self.getmeta("notes"))
         self.notes.bind("<KeyRelease>",lambda e:self.save_note())
@@ -79,7 +82,7 @@ class Peak(tk.Tk):
         grip.bind("<Button-1>",lambda e:setattr(self,"note_drag_y",e.y_root))
         grip.bind("<B1-Motion>",self.resize_notes)
         calc=self.frame(self.left);calc.pack(fill="x",pady=(0,8))
-        self.heading(calc,"▦  Calculadora de Soma")
+        self.heading(calc,"▦  Calculadora de Soma",PURPLE)
         pair=tk.Frame(calc,bg=PANEL);pair.pack(fill="x",padx=10)
         self.calc_fields=[]
         for col,title in enumerate(("Depósitos","Saques")):
@@ -92,7 +95,7 @@ class Peak(tk.Tk):
         self.btn(calc,"Limpar tudo",self.calc_clear).pack(anchor="e",padx=10,pady=7)
         pair.grid_columnconfigure(0,weight=1);pair.grid_columnconfigure(1,weight=1)
         form=self.frame(self.left);form.pack(fill="both",expand=True)
-        self.heading(form,"＋  Nova Operação · Site")
+        self.heading(form,"＋  Nova Operação · Site",PURPLE)
         fields=[("deposit","Depósito (Saída) — R$"),("withdrawal","Saque (Entrada) — R$"),("blogger","Blogueira (Valor pago) — R$"),("client","Nome da cliente"),("phone","Telefone da cliente"),("link","Link da conta")]
         for key,title in fields:
             self.label(form,title,MUTED,9).pack(anchor="w",padx=10,pady=(4,0))
@@ -115,17 +118,19 @@ class Peak(tk.Tk):
         self.label(row,"Sigla:",MUTED,9).pack(side="left")
         self.sigla=self.entry(row,12);self.sigla.pack(side="left",padx=6)
         self.price_total=self.label(row,"R$ 0,00",GREEN,13,True);self.price_total.pack(side="left",padx=12)
-        self.btn(row,"Copiar comanda PIX",self.copy_pix,True).pack(side="right")
+        self.btn(row,"▢",self.copy_pix,True).pack(side="right")
         records=self.frame(self.right);records.pack(fill="both",expand=True)
-        self.heading(records,"☷  Pedidos registrados · Financeiro")
+        self.heading(records,"☷  Pedidos registrados · Financeiro",PURPLE)
         summary=tk.Frame(records,bg=PANEL);summary.pack(fill="x",padx=10,pady=5)
         self.totals={}
         for name in ("Depósitos","Saques","Blogueira","Lucro líquido"):
-            c=tk.Frame(summary,bg=FIELD,highlightbackground="#313943",highlightthickness=1)
+            c=tk.Frame(summary,bg=FIELD,highlightbackground="#343044",highlightthickness=1)
             c.pack(side="left",fill="x",expand=True,padx=3)
-            self.label(c,name,MUTED,9).pack(anchor="w",padx=8,pady=(6,1))
+            self.label(c,name,PURPLE if name=="Blogueira" else GOLD if name=="Saques" else GREEN if name=="Lucro líquido" else BLUE,9).pack(anchor="w",padx=8,pady=(6,1))
             v=self.label(c,"R$ 0,00",BLUE,12,True);v.pack(anchor="w",padx=8,pady=(0,7))
             self.totals[name]=v
+            if name=="Blogueira": v.configure(fg=PURPLE)
+            if name=="Saques": v.configure(fg=GOLD)
         wrap=tk.Frame(records,bg=PANEL);wrap.pack(fill="both",expand=True,padx=10,pady=9)
         cols=("client","link","deposit","withdrawal","blogger","profit")
         self.table=ttk.Treeview(wrap,columns=cols,show="headings",selectmode="browse")
@@ -195,7 +200,7 @@ class Peak(tk.Tk):
             profit=w+b-d;dep+=d;wd+=w;blog+=b
             self.table.insert("", "end",iid=str(id),values=(client,link,money(d),money(w),money(b),money(profit)),tags=("negative" if profit<0 else "positive",))
         for k,v in (("Depósitos",dep),("Saques",wd),("Blogueira",blog),("Lucro líquido",wd+blog-dep)):
-            self.totals[k].config(text=money(v),fg=RED if v<0 else GREEN if k=="Lucro líquido" else BLUE)
+            self.totals[k].config(text=money(v),fg=RED if v<0 else GREEN if k=="Lucro líquido" else PURPLE if k=="Blogueira" else GOLD if k=="Saques" else BLUE)
     def selected_id(self):
         s=self.table.selection()
         if not s:messagebox.showinfo("PEAK","Selecione uma operação.");return None
