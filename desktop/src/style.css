@@ -60,3 +60,20 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 .column-resizer{background:transparent}
 .column-resizer span{opacity:0;background:#a17ae9;box-shadow:none;transition:opacity .18s ease,background .18s ease,box-shadow .18s ease}
 .column-resizer:hover span,.column-resizer:active span{opacity:1;background:#c6a6ff;box-shadow:0 0 16px #a77bffaa}
+
+/* Compact the commands strip and bring all dashboard columns upward. */
+.commands-top{padding:12px 16px 10px;margin-bottom:10px}
+.commands-top .section-head{margin-bottom:7px}
+.commands-top .section-head h3{font-size:14px;margin-top:2px}
+.commands-layout{gap:9px;align-items:center}
+.commands-layout .price-group{padding:8px 11px;border-radius:10px}
+.commands-layout .price-group h4{font-size:11px;margin:0 0 7px}
+.commands-layout .price-inputs{gap:6px}
+.commands-layout .price-inputs label{gap:3px;font-size:9px}
+.commands-layout .price-inputs input{padding:5px 4px;height:28px;font-size:11px}
+.commands-center{gap:5px}
+.commands-center>input{padding:6px 5px;height:29px}
+.commands-center>span{font-size:10px}
+.commands-center-bottom strong{font-size:17px}
+.commands-center-bottom .copy-compact{width:32px;height:32px;padding:7px}
+.columns{margin-top:0}
