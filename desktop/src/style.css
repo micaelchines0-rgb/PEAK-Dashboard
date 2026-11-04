@@ -118,3 +118,12 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 .calc-scroll{display:flex;flex-direction:column;gap:8px;max-height:84px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#7752bc #15121e;padding-right:3px}
 .calc-scroll input{flex:0 0 38px;min-height:38px;width:100%}
 .calc-grid .calc-column strong{margin-top:2px}
+
+/* Each left-side panel can be resized independently by dragging its bottom edge.
+   Overflow stays inside the panel rather than pushing other panels down. */
+.left-col>.card.section{resize:vertical;overflow:auto;min-height:125px;max-height:85vh;scrollbar-width:thin;scrollbar-color:#694aa1 transparent}
+.left-col>.notes-card{min-height:145px}
+.left-col>.card.section:has(.form-grid){min-height:210px}
+.left-col>.card.section:has(.calc-grid){min-height:155px}
+.left-col>.card.section::-webkit-resizer{background:linear-gradient(135deg,transparent 48%,#9e77ee 50%,#9e77ee 58%,transparent 60%);border-radius:2px}
+.left-col>.card.section:focus-within{border-color:#4a3a64}
