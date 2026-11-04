@@ -112,3 +112,9 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 .right-col .metric-mini strong{font-family:Manrope,sans-serif;font-size:clamp(12px,1.15vw,19px);line-height:1.2;letter-spacing:-.4px}
 .right-col{gap:10px}
 @media(max-width:1050px){.right-col .metrics-in-column{gap:5px}.right-col .metric-mini{padding:8px 6px}.right-col .metric-mini strong{font-size:12px}}
+
+/* Calculator: keep two fields visible, scroll additional entries independently. */
+.calc-grid .calc-column{min-width:0;display:flex;flex-direction:column;gap:8px}
+.calc-scroll{display:flex;flex-direction:column;gap:8px;max-height:84px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#7752bc #15121e;padding-right:3px}
+.calc-scroll input{flex:0 0 38px;min-height:38px;width:100%}
+.calc-grid .calc-column strong{margin-top:2px}
