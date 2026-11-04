@@ -176,3 +176,9 @@ input[type='number']::-webkit-inner-spin-button,input[type='number']::-webkit-ou
 .theme-light .metric.green strong{color:#07845d}
 .theme-light .metric.red strong{color:#ca3454}
 .theme-light .btn.primary{color:#fff}
+
+/* In-app release notification. */
+.update-modal{width:min(460px,94vw);padding:22px;display:flex;flex-direction:column;gap:13px}
+.update-modal p{font-size:13px;line-height:1.6;color:inherit;margin:0}
+.update-modal .update-status{padding:10px;border-radius:9px;background:#33253b;color:#ffcbda;overflow-wrap:anywhere}
+.update-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:10px;flex-wrap:wrap}
