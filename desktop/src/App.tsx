@@ -57,7 +57,7 @@ function App(){
       <label>Link da conta<input value={form.link} onChange={e=>setForm({...form,link:e.target.value})} placeholder="https://..."/></label>
       <button className="btn primary submit" type="submit"><Save size={17}/>{selected?'Salvar alterações':'Salvar operação'}</button>
       {selected&&<button className="btn ghost submit" type="button" onClick={()=>{setSelected(null);setForm(blank)}}><X size={16}/> Cancelar edição</button>}
-     </form></section>
+     </form><div className="operation-net" aria-live="polite"><span>Lucro líquido estimado</span><strong className={form.withdrawal+form.blogger-form.deposit<0?'net-negative':'net-positive'}>{currency(form.withdrawal+form.blogger-form.deposit)}</strong></div></section>
     <section className="card section"><div className="section-head"><div><span className="eyebrow">FERRAMENTAS</span><h3>Calculadora rápida</h3></div></div><div className="calc-grid">{['Depósitos','Saques'].map((label,i)=><div key={label}><label>{label}</label><input placeholder="0,00" value={calc[i*2]} onChange={e=>setCalc(a=>a.map((v,j)=>j===i*2?e.target.value:v))}/><input placeholder="0,00" value={calc[i*2+1]} onChange={e=>setCalc(a=>a.map((v,j)=>j===i*2+1?e.target.value:v))}/><strong>{currency(number(calc[i*2])+number(calc[i*2+1]))}</strong></div>)}</div></section>
     <section className="card section notes-card"><div className="section-head"><div><span className="eyebrow">ANOTAÇÕES</span><h3>Bloco de notas</h3></div><button className="text-btn" onClick={()=>setNotes('')}>Limpar</button></div><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Suas anotações ficam salvas automaticamente..."/><small>↘ Arraste o canto inferior direito para redimensionar</small></section>
    </div>
