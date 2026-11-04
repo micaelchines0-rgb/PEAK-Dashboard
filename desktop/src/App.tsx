@@ -2,6 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {invoke} from '@tauri-apps/api/core';
 import {Activity,ArrowDownToLine,ArrowUpFromLine,Check,ClipboardCopy,Database,Download,FileSpreadsheet,Menu,Plus,RefreshCw,Save,Search,Settings2,Shuffle,Trash2,Wallet,X} from 'lucide-react';
 
+type UpdateInfo={available:boolean;current_version:string;latest_version:string;release_url:string};
 type Order={id:number;created:string;client:string;phone:string;link:string;deposit:number;withdrawal:number;blogger:number};
 type Input={client:string;phone:string;link:string;deposit:number;withdrawal:number;blogger:number};
 const blank:Input={client:'',phone:'',link:'',deposit:0,withdrawal:0,blogger:0};
@@ -43,6 +44,27 @@ function App(){
   const el=calcRefs.current[key];
   if(el){el.focus();const scroller=el.parentElement;if(scroller)scroller.scrollTop=scroller.scrollHeight;pendingCalcFocus.current=null}
  },[calc]);
+ const[updateInfo,setUpdateInfo]=useState<UpdateInfo|null>(null);
+ const[updateBusy,setUpdateBusy]=useState(false);
+ const[updateError,setUpdateError]=useState('');
+ const[showUpdate,setShowUpdate]=useState(false);
+ const checkUpdates=async(manual=false)=>{
+  try{
+   if(manual)setUpdateBusy(true);
+   setUpdateError('');
+   const result=await cmd<UpdateInfo>('check_for_updates');
+   setUpdateInfo(result);
+   if(result.available||manual)setShowUpdate(true);
+  }catch(e){if(manual){setUpdateError(String(e));setShowUpdate(true)}}
+  finally{if(manual)setUpdateBusy(false)}
+ };
+ const installUpdate=async()=>{
+  setUpdateBusy(true);setUpdateError('');
+  try{await cmd('download_and_install_update');setUpdateError('Instalador aberto. Confirme a instalação no Windows e feche a PEAK Dashboard quando solicitado.');}
+  catch(e){setUpdateError(String(e))}
+  finally{setUpdateBusy(false)}
+ };
+ useEffect(()=>{const timer=setTimeout(()=>{void checkUpdates(false)},1800);return()=>clearTimeout(timer)},[]);
  const[settings,setSettings]=useState<DashboardSettings>(loadSettings);
  const[settingsOpen,setSettingsOpen]=useState(false);
  useEffect(()=>{try{localStorage.setItem('peak-v11-settings',JSON.stringify(settings))}catch{}},[settings]);
@@ -81,10 +103,10 @@ function App(){
   <button className="nav active"><Activity size={18}/> Visão geral</button>
   <button className="nav" onClick={()=>setGenerator(true)}><Shuffle size={18}/> Gerador de depósitos</button>
   <button className="nav" onClick={()=>cmd('open_data_folder').catch(e=>setMessage(String(e)))}><Database size={18}/> Arquivos e dados</button>
-  <button className="nav" onClick={()=>setSettingsOpen(true)}><Settings2 size={18}/> Configurações</button>\n  <div className="sidebar-bottom"><span className="status-dot"/> Banco de dados local <small>Versão 11.0 · Prévia</small></div>
+  <button className="nav" onClick={()=>setSettingsOpen(true)}><Settings2 size={18}/> Configurações</button>\n  <div className="sidebar-bottom"><span className="status-dot"/> Banco de dados local <small>Versão 11.0.1</small></div>
  </aside>
  <main className="main">
-  <header className="topbar"><button className="icon-btn" title="Menu" onClick={()=>setSidebar(!sidebar)}><Menu size={19}/></button><div><div className="eyebrow">CENTRAL DE OPERAÇÕES</div><h1>Visão geral <span className="title-dot">.</span></h1></div><div className="top-actions"><span className="online"><span className="status-dot"/> Sistema local</span><button className="btn ghost" onClick={refresh}><RefreshCw size={16}/> Atualizar</button><button className="btn primary" onClick={closing}><FileSpreadsheet size={16}/> Fechamento diário</button></div></header>
+  <header className="topbar"><button className="icon-btn" title="Menu" onClick={()=>setSidebar(!sidebar)}><Menu size={19}/></button><div><div className="eyebrow">CENTRAL DE OPERAÇÕES</div><h1>Visão geral <span className="title-dot">.</span></h1></div><div className="top-actions"><span className="online"><span className="status-dot"/> Sistema local</span><button className="btn ghost" onClick={refresh}><RefreshCw size={16}/> Atualizar dados</button><button className="btn ghost" onClick={()=>checkUpdates(true)}><Download size={16}/> Verificar versão</button><button className="btn primary" onClick={closing}><FileSpreadsheet size={16}/> Fechamento diário</button></div></header>
   <div className="columns" ref={splitRef} style={splitWidth?{gridTemplateColumns:"minmax(280px, "+splitWidth+"px) 12px minmax(420px, 1fr)"}:undefined}>
    <div className="left-col">
     <section className="card section notes-card"><div className="section-head"><div><span className="eyebrow">ANOTAÇÕES</span><h3>Bloco de notas</h3></div><button className="text-btn" onClick={()=>setNotes('')}>Limpar</button></div><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Suas anotações ficam salvas automaticamente..."/><small>↘ Arraste o canto inferior direito para redimensionar</small></section>
@@ -118,6 +140,12 @@ function App(){
    </div>
   </div>
   {message&&<div className="toast" role="status"><span>{message}</span><button onClick={()=>setMessage('')}><X size={15}/></button></div>}
+  {showUpdate&&<div className="overlay" onClick={()=>!updateBusy&&setShowUpdate(false)}><div className="modal card update-modal" role="dialog" aria-modal="true" aria-label="Atualização da PEAK Dashboard" onClick={e=>e.stopPropagation()}>
+   <div className="section-head"><div><span className="eyebrow">ATUALIZAÇÕES</span><h3>PEAK Dashboard</h3></div><button className="icon-btn" disabled={updateBusy} onClick={()=>setShowUpdate(false)} aria-label="Fechar"><X size={18}/></button></div>
+   {updateInfo?.available?<><p>Nova versão disponível: <strong>V{updateInfo.latest_version}</strong></p><p>Versão instalada: V{updateInfo.current_version}. O instalador oficial será baixado e verificado antes de abrir.</p></>:<p>{updateInfo?'Você já está usando a versão mais recente disponível.':'Não foi possível verificar a versão.'}</p>}
+   {updateError&&<p className="update-status" role="status">{updateError}</p>}
+   <div className="update-actions"><button className="btn ghost" disabled={updateBusy} onClick={()=>setShowUpdate(false)}>Agora não</button>{updateInfo?.available&&<button className="btn primary" disabled={updateBusy} onClick={installUpdate}><Download size={16}/>{updateBusy?'Baixando e verificando...':'Atualizar agora'}</button>}</div>
+  </div></div>}
   {settingsOpen&&<div className="overlay" onClick={()=>setSettingsOpen(false)}><div className="modal card settings-modal" role="dialog" aria-modal="true" aria-label="Configurações da dashboard" onClick={e=>e.stopPropagation()}>
     <div className="section-head"><div><span className="eyebrow">PERSONALIZAÇÃO</span><h3>Configurações</h3></div><button className="icon-btn" onClick={()=>setSettingsOpen(false)} aria-label="Fechar"><X size={18}/></button></div>
     <div className="settings-body">
