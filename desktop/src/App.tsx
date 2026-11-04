@@ -17,22 +17,32 @@ function App(){
  const[genMin,setGenMin]=useState(11),[genMax,setGenMax]=useState(15),[genCount,setGenCount]=useState(10),[generated,setGenerated]=useState<number[]>([]);
  const[prices,setPrices]=useState<Record<string,number>>({}),[sigla,setSigla]=useState(''),[calc,setCalc]=useState<string[][]>([['',''],['','']]);
  const calcRefs=useRef<Record<string,HTMLInputElement|null>>({});
+ const pendingCalcFocus=useRef<string|null>(null);
  const updateCalc=(column:number,index:number,value:string)=>{
   setCalc(previous=>previous.map((rows,c)=>{
    if(c!==column)return rows;
    const next=[...rows];next[index]=value;
-   while(next.length>2&&next[next.length-1]===''&&next[next.length-2]==='')next.pop();
+   // Remove blank extra rows when their values are erased, keeping two baseline fields.
+   if(index>=2&&value.trim()==='')next.splice(index,1);
    return next;
   }));
  };
- const tidyCalc=(column:number)=>setCalc(previous=>previous.map((rows,c)=>c===column?[...rows.slice(0,2),...rows.slice(2).filter(value=>value.trim()!=='')]:rows));
  const nextCalc=(column:number,index:number)=>{
-  const rows=calc[column];
-  if(index===rows.length-1){
-   setCalc(previous=>previous.map((items,c)=>c===column?[...items,'']:items));
-  }
-  requestAnimationFrame(()=>calcRefs.current[column+':'+(index+1)]?.focus());
+  const target=index+1;
+  pendingCalcFocus.current=column+':'+target;
+  setCalc(previous=>previous.map((rows,c)=>{
+   if(c!==column)return rows;
+   return target>=rows.length?[...rows,'']:rows;
+  }));
+  // If the next field already exists, focus it without waiting for a state update.
+  requestAnimationFrame(()=>{const key=pendingCalcFocus.current;if(key){const el=calcRefs.current[key];if(el){el.focus();el.parentElement?.scrollTo({top:el.offsetTop,behavior:'smooth'});pendingCalcFocus.current=null}}});
  };
+ useEffect(()=>{
+  const key=pendingCalcFocus.current;
+  if(!key)return;
+  const el=calcRefs.current[key];
+  if(el){el.focus();const scroller=el.parentElement;if(scroller)scroller.scrollTop=scroller.scrollHeight;pendingCalcFocus.current=null}
+ },[calc]);
  const[settings,setSettings]=useState<DashboardSettings>(loadSettings);
  const[settingsOpen,setSettingsOpen]=useState(false);
  useEffect(()=>{try{localStorage.setItem('peak-v11-settings',JSON.stringify(settings))}catch{}},[settings]);
@@ -78,7 +88,7 @@ function App(){
   <div className="columns" ref={splitRef} style={splitWidth?{gridTemplateColumns:"minmax(280px, "+splitWidth+"px) 12px minmax(420px, 1fr)"}:undefined}>
    <div className="left-col">
     <section className="card section notes-card"><div className="section-head"><div><span className="eyebrow">ANOTAÇÕES</span><h3>Bloco de notas</h3></div><button className="text-btn" onClick={()=>setNotes('')}>Limpar</button></div><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Suas anotações ficam salvas automaticamente..."/><small>↘ Arraste o canto inferior direito para redimensionar</small></section>
-    <section className="card section"><div className="section-head"><div><span className="eyebrow">FERRAMENTAS</span><h3>Calculadora rápida</h3></div></div><div className="calc-grid">{['Depósitos','Saques'].map((label,column)=><div className="calc-column" key={label}><label>{label}</label><div className="calc-scroll">{calc[column].map((value,index)=><input key={column+':'+index} ref={element=>{calcRefs.current[column+':'+index]=element}} placeholder="0,00" inputMode="decimal" value={value} onChange={e=>updateCalc(column,index,e.target.value)} onBlur={()=>tidyCalc(column)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();nextCalc(column,index)}}}/>)}</div><strong>{currency(calc[column].reduce((sum,value)=>sum+number(value),0))}</strong></div>)}</div></section>
+    <section className="card section"><div className="section-head"><div><span className="eyebrow">FERRAMENTAS</span><h3>Calculadora rápida</h3></div></div><div className="calc-grid">{['Depósitos','Saques'].map((label,column)=><div className="calc-column" key={label}><label>{label}</label><div className="calc-scroll">{calc[column].map((value,index)=><input key={column+':'+index} ref={element=>{calcRefs.current[column+':'+index]=element}} placeholder="0,00" inputMode="decimal" value={value} onChange={e=>updateCalc(column,index,e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();nextCalc(column,index)}}}/>)}</div><strong>{currency(calc[column].reduce((sum,value)=>sum+number(value),0))}</strong></div>)}</div></section>
     <section className="card section"><div className="section-head"><div><span className="eyebrow">REGISTRO</span><h3>{selected?'Editar operação':'Nova operação'}</h3></div><span className="head-icon"><Plus size={19}/></span></div>
      <form onSubmit={save} className="form-grid">
       <label>Depósito (saída)<input type="number" step="0.01" min="0" value={form.deposit||''} onChange={e=>setForm({...form,deposit:Number(e.target.value)})} placeholder="0,00"/></label>
