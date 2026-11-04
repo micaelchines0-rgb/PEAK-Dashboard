@@ -1,5 +1,5 @@
 #define MyAppName "PEAK Dashboard"
-#define MyAppVersion "10.1.0"
+#define MyAppVersion "10.1.1"
 #define MyAppExeName "PEAK Dashboard.exe"
 [Setup]
 AppId={{2CEB24CB-9884-45F7-90EF-6B7643DAE57B}
@@ -10,7 +10,7 @@ DefaultDirName={localappdata}\Programs\PEAK Dashboard
 DefaultGroupName=PEAK Dashboard
 PrivilegesRequired=lowest
 OutputDir=installer
-OutputBaseFilename=PEAK_Dashboard_V10_1_Setup
+OutputBaseFilename=PEAK_Dashboard_V10_1_1_Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
