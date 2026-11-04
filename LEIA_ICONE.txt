@@ -1,0 +1,1 @@
+A logo PEAK foi configurada no EXE, no assistente Inno Setup, no atalho da Area de Trabalho e na janela do programa. Execute build_windows.bat e depois build_installer.bat no Windows. O instalador antigo publicado no GitHub nao muda automaticamente. Recompile e publique uma nova versao.
