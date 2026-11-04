@@ -44,7 +44,7 @@ jobs:
           $version = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
           $requested = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.version }}" } else { "${{ github.ref_name }}".TrimStart("v") }
           if ($version -ne $requested) { throw "Tauri version $version differs from release $requested" }
-          if ($requested -notmatch '^11\\.\\d+\\.\\d+
+          if (-not $requested.StartsWith('11.')) { throw 'Invalid V11 version' }
       - name: Build Windows NSIS installer
         run: npm run tauri build -- --bundles nsis
       - name: Generate SHA256 checksum
