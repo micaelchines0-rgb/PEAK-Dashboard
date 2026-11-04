@@ -1,5 +1,7 @@
 import os, sys, sqlite3, random, json, shutil, subprocess, datetime, tkinter as tk
 from tkinter import ttk, messagebox, filedialog
+import customtkinter as ctk
+ctk.set_appearance_mode('dark')
 from pathlib import Path
 from updater import UpdateController, VERSION
 
@@ -43,16 +45,15 @@ class Peak(tk.Tk):
         self.after(1500, lambda: self.updater.check(manual=False))
         self.protocol("WM_DELETE_WINDOW",self.close)
     def label(self,parent,text,color=FG,size=10,bold=False,**kw):
-        return tk.Label(parent,text=text,bg=parent.cget("bg"),fg=color,font=(FONT,size,"bold" if bold else "normal"),**kw)
+        return tk.Label(parent,text=text,bg=(parent.cget("fg_color") if isinstance(parent,ctk.CTkFrame) else parent.cget("bg")),fg=color,font=(FONT,size,"bold" if bold else "normal"),**kw)
     def frame(self,parent,pad=10):
-        f=tk.Frame(parent,bg=PANEL,highlightbackground="#302c3b",highlightthickness=1)
-        return f
+        return ctk.CTkFrame(parent,fg_color=PANEL,corner_radius=16,border_width=1,border_color="#302b3e")
     def btn(self,p,text,cmd,accent=False):
-        return tk.Button(p,text=text,command=cmd,bg="#5b3fcb" if accent else "#272432",fg="white",activebackground="#795cf0",activeforeground="white",bd=0,padx=10,pady=6,font=(FONT,9,"bold"),cursor="hand2")
+        return ctk.CTkButton(p,text=text,command=cmd,fg_color="#6546d6" if accent else "#272431",hover_color="#8062f2" if accent else "#373244",text_color="#f7f5ff",corner_radius=11,height=36,width=39 if len(text)<3 else 100,font=(FONT,11,"bold"),border_width=1 if not accent else 0,border_color="#3c354e")
     def entry(self,p,width=12):
-        return tk.Entry(p,bg=FIELD,fg=FG,insertbackground=FG,relief="flat",highlightbackground="#393346",highlightthickness=1,font=(FONT,10),width=width)
+        return ctk.CTkEntry(p,fg_color=FIELD,text_color=FG,border_color="#393346",border_width=1,corner_radius=9,height=32,font=(FONT,11),width=max(60,width*9))
     def heading(self,p,title,color=BLUE):
-        self.label(p,title,color,11,True).pack(anchor="w",padx=10,pady=(8,7))
+        self.label(p,title,color,11,True).pack(anchor="w",padx=14,pady=(12,9))
     def make_ui(self):
         head=tk.Frame(self,bg="#111019",height=54);head.pack(fill="x");head.pack_propagate(False)
         self.label(head,"▲  PEAK",PURPLE,13,True).pack(side="left",padx=(16,13))
@@ -72,7 +73,7 @@ class Peak(tk.Tk):
         bar=tk.Frame(self.notes_panel,bg=PANEL);bar.pack(fill="x",padx=10,pady=(7,3))
         self.label(bar,"▤  Bloco de Notas",PURPLE,10,True).pack(side="left")
         self.btn(bar,"Limpar",lambda:(self.notes.delete("1.0","end"),self.save_note())).pack(side="right")
-        self.notes=tk.Text(self.notes_panel,height=5,bg=FIELD,fg=FG,insertbackground=FG,relief="flat",font=(FONT,10),wrap="word",undo=True)
+        self.notes=tk.Text(self.notes_panel,height=5,bg=FIELD,fg=FG,insertbackground=FG,relief="flat",font=(FONT,10),wrap="word",undo=True,highlightthickness=0,bd=0,padx=10,pady=9)
         self.notes.pack(fill="x",padx=10,pady=(0,9))
         self.notes.insert("1.0",self.getmeta("notes"))
         self.notes.bind("<KeyRelease>",lambda e:self.save_note())
@@ -124,10 +125,10 @@ class Peak(tk.Tk):
         summary=tk.Frame(records,bg=PANEL);summary.pack(fill="x",padx=10,pady=5)
         self.totals={}
         for name in ("Depósitos","Saques","Blogueira","Lucro líquido"):
-            c=tk.Frame(summary,bg=FIELD,highlightbackground="#343044",highlightthickness=1)
+            c=ctk.CTkFrame(summary,fg_color=FIELD,corner_radius=13,border_width=1,border_color="#343044")
             c.pack(side="left",fill="x",expand=True,padx=3)
-            self.label(c,name,PURPLE if name=="Blogueira" else GOLD if name=="Saques" else GREEN if name=="Lucro líquido" else BLUE,9).pack(anchor="w",padx=8,pady=(6,1))
-            v=self.label(c,"R$ 0,00",BLUE,12,True);v.pack(anchor="w",padx=8,pady=(0,7))
+            self.label(c,name,PURPLE if name=="Blogueira" else GOLD if name=="Saques" else GREEN if name=="Lucro líquido" else BLUE,9).pack(anchor="w",padx=12,pady=(9,2))
+            v=self.label(c,"R$ 0,00",BLUE,12,True);v.pack(anchor="w",padx=12,pady=(0,11))
             self.totals[name]=v
             if name=="Blogueira": v.configure(fg=PURPLE)
             if name=="Saques": v.configure(fg=GOLD)
