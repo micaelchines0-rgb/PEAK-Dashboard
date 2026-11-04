@@ -119,7 +119,7 @@ class UpdateController:
         self.check(manual=True)
 
     def check(self, manual=False):
-        repo = self.app.cfg.get('github_repo', '')
+        repo = self.app.cfg.get('github_repo') or 'micaelchines0-rgb/PEAK-Dashboard'
         if not repo:
             if manual:
                 self.configure()
