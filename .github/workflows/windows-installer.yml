@@ -10,7 +10,7 @@ on:
         default: true
   push:
     tags:
-      - 'v*'
+      - 'v10.*'
 
 permissions:
   contents: write
