@@ -27,6 +27,12 @@ function App(){
  const totals=useMemo(()=>orders.reduce((a,o)=>({deposit:a.deposit+o.deposit,withdrawal:a.withdrawal+o.withdrawal,blogger:a.blogger+o.blogger}),{deposit:0,withdrawal:0,blogger:0}),[orders]);
  const profit=totals.withdrawal+totals.blogger-totals.deposit;
  const filtered=orders.filter(o=>[o.client,o.phone,o.link].some(s=>s.toLowerCase().includes(search.toLowerCase())));
+ const normalizeSigla=(value:string)=>value.trim().toUpperCase().replace(/^(GRUPO|CLUBE)\s+/,'').replace(/\s+/g,'');
+ const dragonSiglas=new Set(['XW','888','DY','WE','DZ','OKOK','ANJO','AJ','ANJO/AJ','777','A8','VOY','W1','91','EK','WP','M9','RF']);
+ const penguinSiglas=new Set(['MANGA','T1','BOI','MK','Y8','AM','AE','BRA','AA','SQ','M8','GAME','SE','555']);
+ const matchedSigla=normalizeSigla(sigla);
+ const activeGroup=dragonSiglas.has(matchedSigla)?'D':penguinSiglas.has(matchedSigla)?'P':null;
+ const updateSigla=(value:string)=>{const normalized=normalizeSigla(value);const group=dragonSiglas.has(normalized)?'D':penguinSiglas.has(normalized)?'P':null;setSigla(value);if(group)setPrices(previous=>Object.fromEntries(Object.entries(previous).map(([key,count])=>[key,key.startsWith(group)?count:0])))};
  const priceTotal=Object.entries(prices).reduce((a,[k,v])=>a+Number(k.slice(1))*(v||0),0);
  const save=async(e:React.FormEvent)=>{e.preventDefault();try{await cmd('save_order',{input:form,id:selected});setForm(blank);setSelected(null);await refresh();setMessage('Operação salva com sucesso')}catch(e){setMessage(String(e))}};
  const edit=(o:Order)=>{setSelected(o.id);setForm({client:o.client,phone:o.phone,link:o.link,deposit:o.deposit,withdrawal:o.withdrawal,blogger:o.blogger});window.scrollTo({top:0,behavior:'smooth'})};
@@ -65,9 +71,9 @@ function App(){
    <div className="right-col">
   <section className="card section commands-top"><div className="section-head"><div><span className="eyebrow">COMANDAS</span><h3>Dragão & Pinguim</h3></div></div>
    <div className="commands-layout">
-    <div className="price-group"><h4 className="green">🐉 Dragão</h4><div className="price-inputs">{['D5','D7','D9','D11'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
-    <div className="commands-center"><input aria-label="Consultar sigla" value={sigla} onChange={e=>setSigla(e.target.value)} placeholder="CONSULTAR SIGLA (EX: 777)"/><span>Soma Total</span><div className="commands-center-bottom"><strong>{currency(priceTotal)}</strong><button className="btn primary copy-compact" title="Copiar PIX" aria-label="Copiar PIX" onClick={copyPix}><ClipboardCopy size={17}/></button></div></div>
-    <div className="price-group"><h4 className="blue">🐧 Pinguim</h4><div className="price-inputs">{['P6','P8'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
+    <div className="price-group"><h4 className="green">🐉 Dragão</h4><div className="price-inputs">{['D5','D7','D9','D11'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} disabled={activeGroup!==null&&activeGroup!==t.charAt(0)} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
+    <div className="commands-center"><input aria-label="Consultar sigla" value={sigla} onChange={e=>updateSigla(e.target.value)} placeholder="CONSULTAR SIGLA (EX: 777)"/><span>Soma Total</span><div className="commands-center-bottom"><strong>{currency(priceTotal)}</strong><button className="btn primary copy-compact" title="Copiar PIX" aria-label="Copiar PIX" onClick={copyPix}><ClipboardCopy size={17}/></button></div></div>
+    <div className="price-group"><h4 className="blue">🐧 Pinguim</h4><div className="price-inputs">{['P6','P8'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} disabled={activeGroup!==null&&activeGroup!==t.charAt(0)} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
    </div>
   </section>
 
