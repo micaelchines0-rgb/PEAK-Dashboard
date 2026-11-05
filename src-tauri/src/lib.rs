@@ -1,0 +1,1 @@
+#[cfg_attr(mobile, tauri::mobile_entry_point)]\npub fn run() { tauri::Builder::default().run(tauri::generate_context!()).expect("Erro ao iniciar PEAK Dashboard"); }
