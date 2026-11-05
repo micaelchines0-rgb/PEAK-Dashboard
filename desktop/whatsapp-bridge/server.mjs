@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import crypto from 'node:crypto';
-import {Client,LocalAuth} from 'whatsapp-web.js';
+import WhatsApp from 'whatsapp-web.js';
+const {Client,LocalAuth}=WhatsApp;
 import QRCode from 'qrcode';
 
 const base=path.join(os.homedir(),'.peak-whatsapp-bridge');
