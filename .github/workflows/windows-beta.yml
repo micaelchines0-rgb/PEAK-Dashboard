@@ -1,0 +1,28 @@
+name: Build Windows Beta
+on:
+  push:
+    branches: [feature/operator-login]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri -> target
+      - run: npm install
+      - run: npm run build
+      - run: npm run tauri build -- --bundles nsis
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PEAK-Dashboard-Beta-Windows
+          path: desktop/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
