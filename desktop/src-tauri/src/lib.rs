@@ -68,7 +68,7 @@ struct Order { id:i64, created:String, client:String, phone:String, link:String,
 struct OrderInput { client:String, phone:String, link:String, deposit:f64, withdrawal:f64, blogger:f64 }
 fn folder()->Result<PathBuf,String>{
  let base=dirs::data_dir().ok_or("Pasta de dados indisponível")?;
- let dir=base.join("PEAK_Dashboard");fs::create_dir_all(&dir).map_err(|e|e.to_string())?;Ok(dir)
+ let dir=base.join("PEAK_Dashboard_Beta");fs::create_dir_all(&dir).map_err(|e|e.to_string())?;Ok(dir)
 }
 fn database()->Result<Connection,String>{
  let db=folder()?.join("peak.sqlite3");
