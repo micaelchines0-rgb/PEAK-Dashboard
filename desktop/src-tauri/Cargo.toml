@@ -1,6 +1,6 @@
 [package]
 name = "peak_dashboard"
-version = "11.3.8"
+version = "11.3.9"
 edition = "2021"
 
 [lib]
