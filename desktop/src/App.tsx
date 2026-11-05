@@ -136,14 +136,12 @@ function App(){
  </aside>
  <main className="main">
   <header className="topbar"><button className="icon-btn" title="Menu" onClick={()=>setSidebar(!sidebar)}><Menu size={19}/></button><div><div className="eyebrow">CENTRAL DE OPERAÇÕES</div><h1>Visão geral <span className="title-dot">.</span></h1></div><div className="top-actions"><button className="btn ghost" onClick={()=>void doLogout()} title="Encerrar sessão">Sair · {operator.name}</button><span className="online"><span className="status-dot"/> Sistema local</span><button className="btn ghost" onClick={refresh}><RefreshCw size={16}/> Atualizar dados</button><button className="btn ghost" onClick={()=>checkUpdates(true)}><Download size={16}/> Verificar versão</button><button className="btn primary" onClick={closing}><FileSpreadsheet size={16}/> Exportar fechamento local</button></div></header>
-  <section className="card section" style={{margin:'12px 18px',padding:'14px 18px',borderLeft:'4px solid #4285ff'}}>
-   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:16,flexWrap:'wrap'}}>
-    <div><div className="eyebrow">COMISSÃO PEAK · FINANCEIRO</div><strong style={{fontSize:20}}>{finance?currency(finance.pending_due>0?finance.pending_due:finance.current_company):'Consultando...'}</strong><div style={{opacity:.72,fontSize:12}}>{(finance?.pending_due??0)>0?'Valor pendente de pagamento':'Comissão acumulada no expediente atual'}</div></div>
-    <div><strong style={{color:finance&&!finance.can_operate?'#ff7474':'#75dca5'}}>{finance?(finance.can_operate?'Expediente liberado':'Aguardando baixa do administrador'):'Verificando...'}</strong><div style={{opacity:.72,fontSize:12}}>Parte das blogueiras no expediente: {finance?currency(finance.current_blogger):'—'}</div></div>
-    <button className="btn ghost" onClick={()=>void refreshFinance()}><RefreshCw size={15}/> Atualizar comissão</button>
+  <div style={{display:'flex',justifyContent:'flex-end',padding:'8px 18px 0'}}>
+   <div title={financeError||((finance?.pending_due??0)>0?'Comissão pendente de pagamento':'Comissão PEAK acumulada no expediente')} style={{minWidth:152,maxWidth:220,padding:'9px 13px',border:'1px solid #2b3b58',borderLeft:'3px solid '+(finance&&!finance.can_operate?'#ff7474':'#4285ff'),borderRadius:10,background:'#151622',boxShadow:'0 3px 12px #0002'}}>
+    <div style={{fontSize:10,letterSpacing:'.08em',fontWeight:700,opacity:.75}}>COMISSÃO PEAK</div>
+    <strong style={{fontSize:17,lineHeight:1.5,color:finance&&!finance.can_operate?'#ff9292':'#f3f5ff'}}>{finance?currency((finance.pending_due??0)>0?finance.pending_due:finance.current_company):'—'}</strong>
    </div>
-   {financeError&&<div style={{color:'#ff7474',fontSize:12,marginTop:8}}>{financeError}</div>}
-  </section>
+  </div>
   <div className="columns" ref={splitRef} style={splitWidth?{gridTemplateColumns:"minmax(280px, "+splitWidth+"px) 12px minmax(420px, 1fr)"}:undefined}>
    <div className="left-col">
     <section className="card section notes-card"><div className="section-head"><div><span className="eyebrow">ANOTAÇÕES</span><h3>Bloco de notas</h3></div><button className="text-btn" onClick={()=>setNotes('')}>Limpar</button></div><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Suas anotações ficam salvas automaticamente..."/><small>↘ Arraste o canto inferior direito para redimensionar</small></section>
