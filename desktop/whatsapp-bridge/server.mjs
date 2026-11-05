@@ -73,21 +73,33 @@ function refreshGroups(){
  }).finally(()=>{groupsLoading=null});
  return groupsLoading;
 }
-client.on('message',async m=>{
- if(typeof m.from==='string'&&m.from.endsWith('@g.us')&&!groups.some(g=>g.id===m.from)){
-  let name='Grupo '+m.from.split('@')[0];
-  try{const chat=await m.getChat();if(chat?.name)name=chat.name}catch{}
-  groups=[...groups,{id:m.from,name}];saved.knownGroups=groups;save();
-  console.log('Grupo detectado por mensagem:',name);
- }
- if(!saved.groupId||m.from!==saved.groupId)return;
- const contact=await m.getContact().catch(()=>null);
- const body=m.body||'',result=classify(body);
- const item={id:m.id._serialized,chatId:m.from,sender:contact?.pushname||contact?.name||m.author||'Participante',phone:(m.author||m.from).split('@')[0],body,at:new Date(m.timestamp*1000).toISOString(),...result};
- if(messages.some(x=>x.id===item.id))return;
- messages=[...messages,item].slice(-300);
- if(result.order&&!saved.orders[item.id]){saved.orders[item.id]={status:'pending',...item};save();}
-});
+function captureMessage(m){
+ try{
+  if(typeof m.from!=='string'||!m.from.endsWith('@g.us'))return;
+  if(!groups.some(g=>g.id===m.from)){
+   const name='Grupo '+m.from.split('@')[0];
+   groups=[...groups,{id:m.from,name}];saved.knownGroups=groups;save();
+   console.log('Grupo detectado por mensagem:',name);
+  }
+  if(!saved.groupId||m.from!==saved.groupId)return;
+  const id=m.id?._serialized||m.id?.id;
+  if(!id||messages.some(x=>x.id===id))return;
+  const body=typeof m.body==='string'?m.body:'';
+  const result=classify(body);
+  const item={id,chatId:m.from,sender:m._data?.notifyName||m.author||'Participante',phone:(m.author||m.from).split('@')[0],body,at:new Date((m.timestamp||Date.now()/1000)*1000).toISOString(),...result};
+  messages=[...messages,item].slice(-300);
+  if(result.order&&!saved.orders[id]){saved.orders[id]={status:'pending',...item};save();}
+  console.log('Mensagem recebida no grupo:',id);
+  // Buscar contato em segundo plano: nunca bloquear o recebimento de mensagens.
+  void Promise.resolve().then(()=>m.getContact()).then(contact=>{
+   const name=contact?.pushname||contact?.name;
+   if(name){item.sender=name;const order=saved.orders[id];if(order){order.sender=name;save();}}
+  }).catch(e=>console.warn('Contato indisponível:',String(e?.message||e)));
+ }catch(e){console.error('Erro ao receber mensagem:',e?.stack||e)}
+}
+client.on('message',captureMessage);
+client.on('message_create',m=>{if(m.fromMe)captureMessage(m)});
+
 client.initialize().catch(e=>{status='error';lastError=String(e)});
 function reply(res,code,data){res.writeHead(code,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));}
 const server=http.createServer(async(req,res)=>{
