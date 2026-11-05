@@ -1,10 +1,12 @@
 import {invoke} from '@tauri-apps/api/core';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import './WhatsAppDesk.css';
-type Msg={id:string;chatId:string;sender:string;phone:string;body:string;at:string;quantity:number|null;order:boolean;status?:string};
+type Msg={id:string;chatId:string;sender:string;phone:string;body:string;at:string;quantity:number|null;order:boolean;status?:string;fromMe?:boolean};
 type Group={id:string;name:string};
 type Status={status:string;qr:string;phone:string;lastError:string;groupId:string;groups:Group[]};
 const api=<T,>(route:string,payload?:Record<string,unknown>)=>invoke<T>('whatsapp_bridge',{route,payload:payload??null});
+const senderColors=['#8ed8ff','#ffbb91','#c7adff','#8ce2ba','#ffb6d5','#ffe08c'];
+function senderColor(m:Msg){const key=m.phone||m.sender||m.id;let hash=0;for(let i=0;i<key.length;i++)hash=(hash*31+key.charCodeAt(i))|0;return senderColors[(hash>>>0)%senderColors.length]}
 function beep(){try{const c=new AudioContext(),o=c.createOscillator(),g=c.createGain();o.frequency.value=880;g.gain.value=.08;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.18);o.onended=()=>void c.close()}catch{}}
 export default function WhatsAppDesk(){
  const [connection,setConnection]=useState<Status|null>(null);
@@ -67,7 +69,7 @@ export default function WhatsAppDesk(){
    {!connection&&<p>{server?.configured?'Aguardando servidor PEAK. Verifique Tailscale e a porta do operador.':'Aguardando conector local ou configuração do servidor PEAK.'}</p>}
    <label className="wa-sound"><input type="checkbox" checked={sound} onChange={e=>setSound(e.target.checked)}/> Aviso sonoro de novos pedidos</label>
   </div>
-    <div className="wa-messages"><h4>Mensagens do grupo</h4>{messages.length===0?<div className="wa-empty">Aguardando mensagens reais do grupo selecionado</div>:[...messages].sort((a,b)=>new Date(a.at).getTime()-new Date(b.at).getTime()).map(m=><article className="wa-item" key={m.id}><div className="wa-sender-line"><b>{m.sender||'Participante'}</b><span>{m.phone?'+'+m.phone.replace(/^\+/,''):'Número não disponível'}</span></div><small>{new Date(m.at).toLocaleString('pt-BR')}</small><p>{m.body}</p></article>)}
+    <div className="wa-messages"><h4>Mensagens do grupo</h4>{messages.length===0?<div className="wa-empty">Aguardando mensagens reais do grupo selecionado</div>:[...messages].sort((a,b)=>new Date(a.at).getTime()-new Date(b.at).getTime()).map(m=><article className={`wa-item wa-bubble ${m.fromMe?'wa-outgoing':'wa-incoming'}`} key={m.id} style={{'--wa-sender-color':senderColor(m)} as React.CSSProperties}><div className="wa-sender-line"><b>{m.fromMe?'Você':(m.sender||'Participante')}</b><span>{m.phone?'+'+m.phone.replace(/^\+/,''):'Número não disponível'}</span></div><p>{m.body}</p><small>{new Date(m.at).toLocaleString('pt-BR')}</small></article>)}
      <div ref={messagesEndRef} aria-hidden="true" />
     </div>
     {connection?.status==='ready'&&connection.groupId&&<form onSubmit={e=>{e.preventDefault();if(!text.trim())return;void (async()=>{setBusy(true);try{await api('send',{text});setText('');setError('');await refresh()}catch(e){setError(String(e))}finally{setBusy(false)}})()}}><textarea value={text} onChange={e=>setText(e.target.value)} rows={3} maxLength={4000} placeholder="Responder no grupo usando seu número"/><button className="btn primary" disabled={busy||!text.trim()}>Enviar mensagem</button></form>}
