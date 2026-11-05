@@ -20,10 +20,10 @@ const bind=process.env.PEAK_BIND||'127.0.0.1';
 if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Porta inválida');
 if(!/^(127\.0\.0\.1|100\.(?:[0-9]{1,3}\.){2}[0-9]{1,3})$/.test(bind))throw Error('Use loopback ou IP Tailscale 100.x.y.z');
 const statePath=path.join(base,'state.json');
-let saved={groupId:'',orders:{}};
+let saved={groupId:'',orders:{},knownGroups:[]};
 try{saved={...saved,...JSON.parse(fs.readFileSync(statePath,'utf8'))}}catch{}
 const save=()=>fs.writeFileSync(statePath,JSON.stringify(saved),{mode:0o600});
-let qr='',status='starting',lastError='',phone='',groups=[],messages=[];
+let qr='',status='starting',lastError='',phone='',groups=Array.isArray(saved.knownGroups)?saved.knownGroups:[],messages=[];
 let groupsLoading=null;
 let lastGroupAttempt=0;
 const GROUP_REFRESH_COOLDOWN_MS=30000;
@@ -60,7 +60,7 @@ client.on('authenticated',()=>{status='authenticated';qr='';});
 client.on('ready',()=>{status='ready';qr='';phone=client.info?.wid?.user||'';void refreshGroups();});
 client.on('auth_failure',error=>{status='error';lastError=String(error);});
 client.on('disconnected',reason=>{status='disconnected';lastError=String(reason);phone='';});
-async function loadGroups(){const chats=await client.getChats();groups=chats.filter(c=>c.isGroup).map(c=>({id:c.id._serialized,name:c.name}));lastError='';}
+async function loadGroups(){const chats=await client.getChats();const fresh=chats.filter(c=>c.isGroup).map(c=>({id:c.id._serialized,name:c.name}));groups=[...fresh,...groups.filter(g=>!fresh.some(x=>x.id===g.id))];saved.knownGroups=groups;save();lastError='';}
 function refreshGroups(){
  if(status!=='ready'||groupsLoading)return groupsLoading;
  if(Date.now()-lastGroupAttempt<GROUP_REFRESH_COOLDOWN_MS)return null;
@@ -74,6 +74,12 @@ function refreshGroups(){
  return groupsLoading;
 }
 client.on('message',async m=>{
+ if(typeof m.from==='string'&&m.from.endsWith('@g.us')&&!groups.some(g=>g.id===m.from)){
+  let name='Grupo '+m.from.split('@')[0];
+  try{const chat=await m.getChat();if(chat?.name)name=chat.name}catch{}
+  groups=[...groups,{id:m.from,name}];saved.knownGroups=groups;save();
+  console.log('Grupo detectado por mensagem:',name);
+ }
  if(!saved.groupId||m.from!==saved.groupId)return;
  const contact=await m.getContact().catch(()=>null);
  const body=m.body||'',result=classify(body);
