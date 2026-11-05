@@ -8,11 +8,17 @@ import WhatsApp from 'whatsapp-web.js';
 const {Client,LocalAuth}=WhatsApp;
 import QRCode from 'qrcode';
 
-const base=path.join(os.homedir(),'.peak-whatsapp-bridge');
+const operatorId=process.env.PEAK_OPERATOR_ID||'local';
+if(!/^[a-zA-Z0-9_-]{1,32}$/.test(operatorId))throw Error('Identificador de operador inválido');
+const base=process.env.PEAK_DATA_DIR?path.resolve(process.env.PEAK_DATA_DIR):path.join(os.homedir(),'.peak-whatsapp-bridge',operatorId);
 fs.mkdirSync(base,{recursive:true,mode:0o700});
 const tokenPath=path.join(base,'token');
 if(!fs.existsSync(tokenPath))fs.writeFileSync(tokenPath,crypto.randomBytes(32).toString('hex'),{mode:0o600});
 const token=fs.readFileSync(tokenPath,'utf8').trim();
+const port=Number(process.env.PEAK_PORT||38741);
+const bind=process.env.PEAK_BIND||'127.0.0.1';
+if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Porta inválida');
+if(!/^(127\.0\.0\.1|100\.(?:[0-9]{1,3}\.){3}[0-9]{1,3})$/.test(bind))throw Error('Use loopback ou IP Tailscale 100.x.y.z');
 const statePath=path.join(base,'state.json');
 let saved={groupId:'',orders:{}};
 try{saved={...saved,...JSON.parse(fs.readFileSync(statePath,'utf8'))}}catch{}
@@ -35,7 +41,7 @@ function locateChrome(dir,depth=0){
 }
 const executablePath=locateChrome(chromeRoot);
 console.log('PEAK bridge startup; Chromium:',executablePath||'Puppeteer default');
-const client=new Client({authStrategy:new LocalAuth({clientId:'peak-operator',dataPath:path.join(base,'session')}),puppeteer:{headless:true,...(executablePath?{executablePath}:{}),args:['--no-first-run','--no-default-browser-check']}});
+const client=new Client({authStrategy:new LocalAuth({clientId:'peak-'+operatorId,dataPath:path.join(base,'session')}),puppeteer:{headless:true,...(executablePath?{executablePath}:{}),args:['--no-first-run','--no-default-browser-check']}});
 client.on('qr',async value=>{status='qr';qr=await QRCode.toDataURL(value);});
 client.on('authenticated',()=>{status='authenticated';qr='';});
 client.on('ready',async()=>{status='ready';qr='';phone=client.info?.wid?.user||'';await loadGroups();});
@@ -81,5 +87,5 @@ const server=http.createServer(async(req,res)=>{
   return reply(res,404,{error:'Not found'});
  }catch(e){return reply(res,400,{error:String(e.message||e)})}
 });
-server.listen(38741,'127.0.0.1',()=>console.log('PEAK WhatsApp bridge on localhost:38741'));
+server.listen(port,bind,()=>console.log(`PEAK WhatsApp ${operatorId} on ${bind}:${port}`));
 process.on('SIGINT',()=>{server.close();client.destroy().finally(()=>process.exit(0))});
