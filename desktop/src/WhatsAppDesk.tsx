@@ -21,6 +21,7 @@ export default function WhatsAppDesk(){
  const [serverToken,setServerToken]=useState('');
  const [showServer,setShowServer]=useState(false);
  const known=useRef<Set<string>>(new Set());
+ const messagesEndRef=useRef<HTMLDivElement|null>(null);
  const loaded=useRef(false);
  const refreshing=useRef(false);
  const refresh=useCallback(async()=>{
@@ -39,6 +40,7 @@ export default function WhatsAppDesk(){
  useEffect(()=>{void invoke<{configured:boolean;host?:string;port?:number}>('whatsapp_server_settings').then(setServer).catch(()=>{});},[]);
  useEffect(()=>{void refresh();const timer=setInterval(()=>{if(!document.hidden)void refresh()},5000);return()=>clearInterval(timer)},[refresh]);
  async function action(route:string,payload:Record<string,unknown>){setBusy(true);try{await api(route,payload);setError('');await refresh()}catch(e){setError(String(e))}finally{setBusy(false)}}
+ useEffect(()=>{messagesEndRef.current?.scrollIntoView({block:'end',behavior:'auto'});},[messages]);
  const pending=orders.filter(o=>o.status==='pending');
  const doing=orders.filter(o=>o.status==='doing');
  return <aside className="wa-desk" aria-label="Central WhatsApp">
@@ -65,7 +67,8 @@ export default function WhatsAppDesk(){
    {!connection&&<p>{server?.configured?'Aguardando servidor PEAK. Verifique Tailscale e a porta do operador.':'Aguardando conector local ou configuração do servidor PEAK.'}</p>}
    <label className="wa-sound"><input type="checkbox" checked={sound} onChange={e=>setSound(e.target.checked)}/> Aviso sonoro de novos pedidos</label>
   </div>
-    <div className="wa-messages"><h4>Mensagens do grupo</h4>{messages.length===0?<div className="wa-empty">Aguardando mensagens reais do grupo selecionado</div>:[...messages].reverse().map(m=><article className="wa-item" key={m.id}><b>{m.sender}</b><small>{m.phone} • {new Date(m.at).toLocaleString('pt-BR')}</small><p>{m.body}</p></article>)}
+    <div className="wa-messages"><h4>Mensagens do grupo</h4>{messages.length===0?<div className="wa-empty">Aguardando mensagens reais do grupo selecionado</div>:[...messages].sort((a,b)=>new Date(a.at).getTime()-new Date(b.at).getTime()).map(m=><article className="wa-item" key={m.id}><b>{m.sender}</b><small>{m.phone} • {new Date(m.at).toLocaleString('pt-BR')}</small><p>{m.body}</p></article>)}
+     <div ref={messagesEndRef} aria-hidden="true" />
     </div>
     {connection?.status==='ready'&&connection.groupId&&<form onSubmit={e=>{e.preventDefault();if(!text.trim())return;void (async()=>{setBusy(true);try{await api('send',{text});setText('');setError('');await refresh()}catch(e){setError(String(e))}finally{setBusy(false)}})()}}><textarea value={text} onChange={e=>setText(e.target.value)} rows={3} maxLength={4000} placeholder="Responder no grupo usando seu número"/><button className="btn primary" disabled={busy||!text.trim()}>Enviar mensagem</button></form>}
    </section>
