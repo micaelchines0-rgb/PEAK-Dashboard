@@ -32,7 +32,7 @@
     "icon": [
       "icons/icon.ico"
     ],
-    "shortDescription": "PEAK Dashboard — Controle financeiro",
+    "shortDescription": "PEAK Dashboard — Controle financeiro e WhatsApp integrado",
     "windows": {
       "nsis": {
         "displayLanguageSelector": false
