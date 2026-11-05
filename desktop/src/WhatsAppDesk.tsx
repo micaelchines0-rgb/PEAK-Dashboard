@@ -78,7 +78,18 @@ export default function WhatsAppDesk(){
     <section className="wa-panel wa-pending"><h4>Pedidos pendentes <span>{pending.length}</span></h4>{pending.length===0?<div className="wa-empty">Nenhum pedido pendente</div>:pending.map((m,i)=>{const link=m.body.match(/https?:\/\/[^\s]+/i)?.[0];return <article className="wa-item wa-order wa-order-card" key={m.id}>
      <div className="wa-order-top"><span className="wa-order-index">{i+1}/{pending.length}</span><time>{new Date(m.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time><b style={{color:senderColor(m)}}>{m.sender||'Participante'}</b><span className="wa-order-phone">{m.phone?'+'+m.phone.replace(/^\+/,''):'Número indisponível'}</span></div>
      <div className="wa-order-body">{link?<><a href={link} target="_blank" rel="noopener noreferrer">{link}</a>{m.body.replace(link,'').trim()&&<p>{m.body.replace(link,'').trim()}</p>}</>:<p>{m.body}</p>}</div>
-     <div className="wa-order-bottom"><span>{m.quantity!==null?m.quantity+' contas':'Link identificado'}</span><button type="button" className="btn primary" disabled={busy} onClick={()=>void action('order',{id:m.id,status:'doing'})}>▷ Iniciar serviço</button></div>
+     <div className="wa-order-quantity">{m.quantity!==null?m.quantity+' contas':'Link identificado'}</div>
+     <div className="wa-order-actions">
+      <div className="wa-order-action-left">
+       <div className="wa-order-choice"><button type="button" title="Dragão — funcionalidade a definir" disabled>Dragão</button><button type="button" title="Pinguim — funcionalidade a definir" disabled>Pinguim</button></div>
+       <button type="button" className="wa-order-icon-btn" title="Editar — funcionalidade a definir" aria-label="Editar" disabled>✎</button>
+       <button type="button" title="Não fazemos — funcionalidade a definir" disabled>⊘ Não fazemos</button>
+       <button type="button" title="Pôr em serviço — funcionalidade a definir" disabled>▷ Pôr em serviço</button>
+       <button type="button" title="Criar Registro — funcionalidade a definir" disabled>⊞ Criar Registro</button>
+       <button type="button" className="wa-order-icon-btn" title="Registro visual — funcionalidade a definir" aria-label="Registro visual" disabled>▣</button>
+      </div>
+      <button type="button" className="wa-order-reply-price" title="Responder preço — funcionalidade a definir" disabled>Responder preço</button>
+     </div>
     </article>})}</section>
     <section className="wa-panel wa-doing"><h4>Serviços sendo feitos <span>{doing.length}</span></h4>{doing.length===0?<div className="wa-empty">Nenhum serviço em andamento</div>:doing.map(m=><article className="wa-item" key={m.id}><b>{m.sender}</b><p>{m.body}</p><button className="btn primary" disabled={busy} onClick={()=>void action('order',{id:m.id,status:'done'})}>Concluir serviço</button></article>)}</section>
    </div>
