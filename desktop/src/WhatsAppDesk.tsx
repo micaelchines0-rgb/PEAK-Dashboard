@@ -12,6 +12,7 @@ export default function WhatsAppDesk(){
  const [orders,setOrders]=useState<Msg[]>([]);
  const [text,setText]=useState('');
  const [error,setError]=useState('');
+ const [diagnostics,setDiagnostics]=useState('');
  const [sound,setSound]=useState(true);
  const [busy,setBusy]=useState(false);
  const known=useRef<Set<string>>(new Set());
@@ -39,6 +40,7 @@ export default function WhatsAppDesk(){
    {connection?.status==='ready'&&<div><label>Grupo das blogueiras<select value={connection.groupId||''} onChange={e=>void action('select',{groupId:e.target.value})} disabled={busy}><option value="">Selecione um grupo</option>{connection.groups.map(g=><option value={g.id} key={g.id}>{g.name}</option>)}</select></label><button className="btn ghost" onClick={()=>void action('groups',{})} disabled={busy}>Atualizar grupos</button></div>}
    {connection?.lastError&&<p role="alert">{connection.lastError}</p>}
    {error&&<p role="alert">{error}</p>}
+   {!connection&&<div className="wa-recovery"><button className="btn primary" onClick={async()=>{try{await invoke('whatsapp_restart');setError('');setDiagnostics('');setTimeout(()=>void refresh(),1800)}catch(e){setError(String(e))}}}>Tentar reconectar</button><button className="btn ghost" onClick={async()=>{try{setDiagnostics(await invoke<string>('whatsapp_diagnostics'))}catch(e){setDiagnostics(String(e))}}}>Ver diagnóstico</button>{diagnostics&&<pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:11,maxHeight:220,overflow:'auto'}}>{diagnostics}</pre>}</div>}
    {!connection&&<p>Aguardando o conector iniciar. Se o aviso persistir, reinstale a versão atualizada da PEAK Dashboard.</p>}
    <label className="wa-sound"><input type="checkbox" checked={sound} onChange={e=>setSound(e.target.checked)}/> Aviso sonoro de novos pedidos</label>
   </div>
