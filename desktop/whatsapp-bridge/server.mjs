@@ -72,12 +72,13 @@ function reply(res,code,data){res.writeHead(code,{'Content-Type':'application/js
 const server=http.createServer(async(req,res)=>{
  if(req.headers.authorization!==`Bearer ${token}`)return reply(res,401,{error:'Unauthorized'});
  let data={};
+ let route='unknown';
  try{
   if(req.method==='POST'){
    let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>100000)throw Error('Payload too large')}
    data=JSON.parse(raw||'{}');
   }
-  const route=new URL(req.url,'http://localhost').pathname;
+  route=new URL(req.url,'http://localhost').pathname;
   if(route==='/status')return reply(res,200,{status,qr,phone,lastError,groupId:saved.groupId,groups});
   if(route==='/groups'){if(status!=='ready')throw Error('WhatsApp desconectado');await loadGroups();return reply(res,200,{groups});}
   if(route==='/select'){if(!groups.some(g=>g.id===data.groupId))throw Error('Grupo não encontrado');saved.groupId=data.groupId;messages=[];save();return reply(res,200,{ok:true});}
