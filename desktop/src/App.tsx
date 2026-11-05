@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {invoke} from '@tauri-apps/api/core';
+import WhatsAppDesk from './WhatsAppDesk';
 import {Activity,ArrowDownToLine,ArrowUpFromLine,Check,ClipboardCopy,Database,Download,FileSpreadsheet,Menu,Plus,RefreshCw,Save,Search,Settings2,Shuffle,Trash2,Wallet,X} from 'lucide-react';
 
 type UpdateInfo={available:boolean;current_version:string;latest_version:string;release_url:string};
@@ -128,7 +129,8 @@ function App(){
    </div>
    <div className="column-resizer" role="separator" title="Arraste para ajustar a largura. Clique duas vezes para restaurar." onPointerDown={startSplit} onPointerMove={moveSplit} onPointerUp={stopSplit} onLostPointerCapture={stopSplit} onDoubleClick={resetSplit}><span/></div>
    <div className="right-col">
-  <section className="card section commands-top"><div className="section-head"><div><span className="eyebrow">COMANDAS</span><h3>{settings.dragonName} & {settings.penguinName}</h3></div></div>
+  <WhatsAppDesk/>
+   <section className="card section commands-top"><div className="section-head"><div><span className="eyebrow">COMANDAS</span><h3>{settings.dragonName} & {settings.penguinName}</h3></div></div>
    <div className="commands-layout">
     <div className="price-group"><h4 className="green">🐉 {settings.dragonName}</h4><div className="price-inputs">{['D5','D7','D9','D11'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} disabled={activeGroup!==null&&activeGroup!==t.charAt(0)} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
     <div className="commands-center"><input aria-label="Consultar sigla" value={sigla} onChange={e=>updateSigla(e.target.value)} placeholder="CONSULTAR SIGLA (EX: 777)"/><span>Soma Total</span><div className="commands-center-bottom"><strong>{currency(priceTotal)}</strong><button className="btn primary copy-compact" title="Copiar PIX" aria-label="Copiar PIX" onClick={copyPix}><ClipboardCopy size={17}/></button></div></div>
