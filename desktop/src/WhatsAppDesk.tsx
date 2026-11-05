@@ -15,6 +15,11 @@ export default function WhatsAppDesk(){
  const [diagnostics,setDiagnostics]=useState('');
  const [sound,setSound]=useState(true);
  const [busy,setBusy]=useState(false);
+ const [server,setServer]=useState<{configured:boolean;host?:string;port?:number}|null>(null);
+ const [serverHost,setServerHost]=useState('');
+ const [serverPort,setServerPort]=useState('38741');
+ const [serverToken,setServerToken]=useState('');
+ const [showServer,setShowServer]=useState(false);
  const known=useRef<Set<string>>(new Set());
  const loaded=useRef(false);
  const refresh=useCallback(async()=>{
@@ -28,6 +33,7 @@ export default function WhatsAppDesk(){
    }else{setMessages([]);setOrders([]);loaded.current=false}
   }catch(e){setConnection(null);setError(String(e))}
  },[sound]);
+ useEffect(()=>{void invoke<{configured:boolean;host?:string;port?:number}>('whatsapp_server_settings').then(setServer).catch(()=>{});},[]);
  useEffect(()=>{void refresh();const timer=setInterval(()=>void refresh(),2500);return()=>clearInterval(timer)},[refresh]);
  async function action(route:string,payload:Record<string,unknown>){setBusy(true);try{await api(route,payload);setError('');await refresh()}catch(e){setError(String(e))}finally{setBusy(false)}}
  const pending=orders.filter(o=>o.status==='pending');
@@ -40,10 +46,20 @@ export default function WhatsAppDesk(){
    {connection?.status!=='ready'&&<p>Leia o QR Code com seu WhatsApp pessoal para conectar.</p>}
    {connection?.qr&&<div className="wa-qr"><img src={connection.qr} alt="QR Code de conexão do WhatsApp" width="220" height="220"/><p>No celular: Aparelhos conectados → Conectar aparelho</p></div>}
    {connection?.status==='ready'&&<div className="wa-group-picker"><label>Grupo das blogueiras<select value={connection.groupId||''} onChange={e=>void action('select',{groupId:e.target.value})} disabled={busy}><option value="">Selecione um grupo</option>{connection.groups.map(g=><option value={g.id} key={g.id}>{g.name}</option>)}</select></label><button className="btn ghost" onClick={()=>void action('groups',{})} disabled={busy}>Atualizar grupos</button></div>}
+   <div className="wa-server-config">
+    <button type="button" className="btn ghost" onClick={()=>setShowServer(v=>!v)}>{server?.configured?'Servidor PEAK: '+server.host+':'+server.port:'Configurar servidor PEAK'}</button>
+    {showServer&&<div className="wa-server-form">
+      <label>IP Tailscale do servidor<input value={serverHost} onChange={e=>setServerHost(e.target.value)} placeholder="100.x.y.z"/></label>
+      <label>Porta do operador<input value={serverPort} onChange={e=>setServerPort(e.target.value)} placeholder="38741"/></label>
+      <label>Chave individual<input type="password" value={serverToken} onChange={e=>setServerToken(e.target.value)} placeholder="Cole a chave do seu operador"/></label>
+      <button className="btn primary" disabled={busy} onClick={async()=>{setBusy(true);try{await invoke('whatsapp_configure_server',{host:serverHost,port:Number(serverPort),token:serverToken});setServer({configured:true,host:serverHost,port:Number(serverPort)});setServerToken('');setShowServer(false);await refresh()}catch(e){setError(String(e))}finally{setBusy(false)}}}>Salvar conexão</button>
+      {server?.configured&&<button className="btn ghost" onClick={async()=>{try{await invoke('whatsapp_remove_server');setServer({configured:false});setConnection(null)}catch(e){setError(String(e))}}}>Remover servidor</button>}
+    </div>}
+   </div>
    {connection?.lastError&&<p role="alert">{connection.lastError}</p>}
    {error&&<p role="alert">{error}</p>}
-   {!connection&&<div className="wa-recovery"><button className="btn primary" onClick={async()=>{try{await invoke('whatsapp_restart');setError('');setDiagnostics('');setTimeout(()=>void refresh(),1800)}catch(e){setError(String(e))}}}>Tentar reconectar</button><button className="btn ghost" onClick={async()=>{try{setDiagnostics(await invoke<string>('whatsapp_diagnostics'))}catch(e){setDiagnostics(String(e))}}}>Ver diagnóstico</button>{diagnostics&&<pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:11,maxHeight:220,overflow:'auto'}}>{diagnostics}</pre>}</div>}
-   {!connection&&<p>Aguardando o conector iniciar. Se o aviso persistir, reinstale a versão atualizada da PEAK Dashboard.</p>}
+   {!connection&&!server?.configured&&<div className="wa-recovery"><button className="btn primary" onClick={async()=>{try{await invoke('whatsapp_restart');setError('');setDiagnostics('');setTimeout(()=>void refresh(),1800)}catch(e){setError(String(e))}}}>Tentar reconectar</button><button className="btn ghost" onClick={async()=>{try{setDiagnostics(await invoke<string>('whatsapp_diagnostics'))}catch(e){setDiagnostics(String(e))}}}>Ver diagnóstico</button>{diagnostics&&<pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:11,maxHeight:220,overflow:'auto'}}>{diagnostics}</pre>}</div>}
+   {!connection&&<p>{server?.configured?'Aguardando servidor PEAK. Verifique Tailscale e a porta do operador.':'Aguardando conector local ou configuração do servidor PEAK.'}</p>}
    <label className="wa-sound"><input type="checkbox" checked={sound} onChange={e=>setSound(e.target.checked)}/> Aviso sonoro de novos pedidos</label>
   </div>
     <div className="wa-messages"><h4>Mensagens do grupo</h4>{messages.length===0?<div className="wa-empty">Aguardando mensagens reais do grupo selecionado</div>:[...messages].reverse().map(m=><article className="wa-item" key={m.id}><b>{m.sender}</b><small>{m.phone} • {new Date(m.at).toLocaleString('pt-BR')}</small><p>{m.body}</p></article>)}
