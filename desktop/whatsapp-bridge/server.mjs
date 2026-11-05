@@ -39,7 +39,17 @@ function locateChrome(dir,depth=0){
  }
  return '';
 }
-const executablePath=locateChrome(chromeRoot);
+const windowsChromePaths=process.platform==='win32'?[
+ process.env.PROGRAMFILES&&path.join(process.env.PROGRAMFILES,'Google','Chrome','Application','chrome.exe'),
+ process.env['PROGRAMFILES(X86)']&&path.join(process.env['PROGRAMFILES(X86)'],'Google','Chrome','Application','chrome.exe'),
+ process.env.LOCALAPPDATA&&path.join(process.env.LOCALAPPDATA,'Google','Chrome','Application','chrome.exe')
+].filter(Boolean):[];
+const chromeCandidates=[
+ process.env.PEAK_CHROME_PATH,
+ ...windowsChromePaths,
+ locateChrome(chromeRoot)
+].filter(Boolean);
+const executablePath=chromeCandidates.find(candidate=>fs.existsSync(candidate))||'';
 console.log('PEAK bridge startup; Chromium:',executablePath||'Puppeteer default');
 const client=new Client({authStrategy:new LocalAuth({clientId:'peak-'+operatorId,dataPath:path.join(base,'session')}),puppeteer:{headless:true,...(executablePath?{executablePath}:{}),args:['--no-first-run','--no-default-browser-check']}});
 client.on('qr',async value=>{status='qr';qr=await QRCode.toDataURL(value);});
