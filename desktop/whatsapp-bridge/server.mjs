@@ -190,6 +190,12 @@ const server=http.createServer(async(req,res)=>{
    if(typeof data.text!=='string'||!data.text.trim()||data.text.length>4000)throw Error('Mensagem inválida');
    if(data.replyId){const original=await client.getMessageById(String(data.replyId));if(!original||original.from!==saved.groupId&&original.to!==saved.groupId)throw Error('Mensagem original não encontrada neste grupo');await original.reply(data.text.trim(),saved.groupId)}else{await client.sendMessage(saved.groupId,data.text.trim())}return reply(res,200,{ok:true});
   }
+  if(route==='/edit-service'){
+   const order=saved.orders[data.id];
+   if(!order||order.chatId!==saved.groupId||order.status!=='doing')throw Error('Serviço em andamento não encontrado');
+   if(typeof data.body!=='string'||data.body.length>4000)throw Error('Descrição inválida');
+   order.body=data.body;save();return reply(res,200,{ok:true});
+  }
   if(route==='/complete-order'){
    if(status!=='ready'||!saved.groupId)throw Error('WhatsApp desconectado');
    const order=saved.orders[data.id];
