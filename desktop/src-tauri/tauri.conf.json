@@ -39,7 +39,7 @@
       }
     },
     "resources": {
-      "../whatsapp-bridge/dist/**/*": "whatsapp-bridge/"
+      "../whatsapp-bridge/dist": "whatsapp-bridge"
     }
   }
 }
