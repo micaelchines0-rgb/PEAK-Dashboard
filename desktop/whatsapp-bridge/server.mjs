@@ -30,6 +30,7 @@ const GROUP_REFRESH_COOLDOWN_MS=30000;
 const DRAGAO=['XW','888','DY','WE','DZ','OKOK','ANJO','AJ','777','A8','VOY','W1','91','EK','WP','M9','RF'];
 const PINGUIM=['MANGA','T1','BOI','MK','Y8','AM','AE','BRA','AA','SQ','M8','GAME','SE','555'];
 function priceDetails(order,manual){
+ if(order.edit){const e=order.edit;const rows=e.rows.filter(x=>x.quantity>0);if(!rows.length)throw Error('Informe ao menos uma faixa com quantidade');if(rows.some(x=>!Number.isFinite(x.unit)||x.unit<=0))throw Error('Informe o preço unitário de todas as faixas antes de responder');return {group:e.group,quantity:rows.reduce((n,x)=>n+x.quantity,0),rows,total:rows.reduce((n,x)=>n+x.quantity*x.unit,0)};}
  const body=String(order.body||'');
  const urls=body.match(/https?:\/\/[^\s]+/gi)||[];
  const hostTokens=urls.flatMap(url=>{try{return new URL(url).hostname.toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean)}catch{return []}});
@@ -148,6 +149,20 @@ const server=http.createServer(async(req,res)=>{
   if(route==='/groups'){if(status!=='ready')throw Error('WhatsApp desconectado');void refreshGroups();return reply(res,200,{groups,loading:!!groupsLoading,lastError});}
   if(route==='/select'){if(!groups.some(g=>g.id===data.groupId))throw Error('Grupo não encontrado');saved.groupId=data.groupId;messages=[];save();return reply(res,200,{ok:true});}
   if(route==='/messages')return reply(res,200,{messages,orders:Object.values(saved.orders).filter(o=>o.chatId===saved.groupId)});
+  if(route==='/edit-order'){
+   const order=saved.orders[data.id];
+   if(!order||order.chatId!==saved.groupId||order.status!=='pending')throw Error('Pedido pendente não encontrado');
+   if(order.priceRepliedAt)throw Error('Não é possível editar um preço já enviado');
+   const edit=data.edit;
+   if(!edit||!['dragao','pinguim'].includes(edit.group)||typeof edit.body!=='string'||edit.body.length>4000)throw Error('Dados de edição inválidos');
+   if(!Array.isArray(edit.rows)||edit.rows.length!==4)throw Error('Informe as quatro faixas');
+   const tiers=['10','11-15','15-18','19-25'];
+   const rows=edit.rows.map((row,i)=>({tier:tiers[i],quantity:Number(row.quantity),unit:row.unit===''||row.unit===null?null:Number(row.unit)}));
+   if(rows.some(x=>!Number.isSafeInteger(x.quantity)||x.quantity<0||x.quantity>100000||x.unit!==null&&(!Number.isFinite(x.unit)||x.unit<0||x.unit>10000)))throw Error('Quantidade ou preço inválido');
+   if(!rows.some(x=>x.quantity>0))throw Error('Informe uma quantidade');
+   order.edit={group:edit.group,body:edit.body,rows};order.body=edit.body;order.quantity=rows.reduce((n,x)=>n+x.quantity,0);save();
+   return reply(res,200,{ok:true});
+  }
   if(route==='/quote-price'){
    if(status!=='ready'||!saved.groupId)throw Error('WhatsApp não conectado');
    const order=saved.orders[data.id];
