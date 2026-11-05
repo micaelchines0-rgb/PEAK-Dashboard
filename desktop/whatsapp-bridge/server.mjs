@@ -27,6 +27,29 @@ let qr='',status='starting',lastError='',phone='',groups=Array.isArray(saved.kno
 let groupsLoading=null;
 let lastGroupAttempt=0;
 const GROUP_REFRESH_COOLDOWN_MS=30000;
+const DRAGAO=['XW','888','DY','WE','DZ','OKOK','ANJO','AJ','777','A8','VOY','W1','91','EK','WP','M9','RF'];
+const PINGUIM=['MANGA','T1','BOI','MK','Y8','AM','AE','BRA','AA','SQ','M8','GAME','SE','555'];
+function priceDetails(order,manual){
+ const body=String(order.body||'');
+ const urls=body.match(/https?:\/\/[^\s]+/gi)||[];
+ const hostTokens=urls.flatMap(url=>{try{return new URL(url).hostname.toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean)}catch{return []}});
+ const tokens=body.toUpperCase().replace(/https?:\/\/[^\s]+/gi,' ').split(/[^A-Z0-9]+/).filter(Boolean);
+ const found=[...new Set([...hostTokens,...tokens].flatMap(token=>[...DRAGAO,...PINGUIM].filter(name=>token===name||token.startsWith(name+'-')||token.startsWith(name+'PG')||token.startsWith(name+'SMILING'))))];
+ const groups=[...new Set(found.map(name=>DRAGAO.includes(name)?'dragao':'pinguim'))];
+ const group=manual==='dragao'||manual==='pinguim'?manual:groups.length===1?groups[0]:null;
+ if(!group)throw Error('Não foi possível identificar Dragão ou Pinguim. Selecione manualmente.');
+ const quantity=Number(order.quantity);
+ if(!Number.isSafeInteger(quantity)||quantity<=0)throw Error('Quantidade de contas não identificada');
+ const deposit=body.match(/(?:dep[oó]sitos?\s*(?:de|d[eo])?\s*|contas?\s*(?:de|d[eo])\s*)(?:R\$\s*)?(\d{1,2})(?!\d)/i);
+ if(!deposit)throw Error('Valor do depósito não identificado. Informe na mensagem para calcular');
+ const amount=Number(deposit[1]);
+ let unit;
+ if(group==='dragao')unit=amount===10?5:amount>=11&&amount<=15?7:amount>=16&&amount<=18?9:null;
+ else unit=amount===10?6:amount>=11&&amount<=13?8:null;
+ if(unit===null)throw Error('Faixa de depósito não contemplada na tabela de '+group);
+ return {group,quantity,deposit:amount,unit,total:quantity*unit};
+}
+function makeComanda(total){return '📌 PIX CELULAR\n💠 81995882238\n🏷️ MICAEL RICARDO\n\n────────────\n\n💸 '+total.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})+'\n⚠️ MARCAR E ENVIAR O COMPROVANTE\n\n────────────\n\n⏱️ Prazo para conclusão: de 30 min a 1h após o envio do comprovante.';}
 const classify=body=>{
  const m=body.match(/\b(\d{1,5})\s*contas?\b|\bcontas?\s*(?:de\s*)?(\d{1,5})\b/i);
  const quantity=m?Number(m[1]||m[2]):null;
@@ -125,6 +148,18 @@ const server=http.createServer(async(req,res)=>{
   if(route==='/groups'){if(status!=='ready')throw Error('WhatsApp desconectado');void refreshGroups();return reply(res,200,{groups,loading:!!groupsLoading,lastError});}
   if(route==='/select'){if(!groups.some(g=>g.id===data.groupId))throw Error('Grupo não encontrado');saved.groupId=data.groupId;messages=[];save();return reply(res,200,{ok:true});}
   if(route==='/messages')return reply(res,200,{messages,orders:Object.values(saved.orders).filter(o=>o.chatId===saved.groupId)});
+  if(route==='/quote-price'){
+   if(status!=='ready'||!saved.groupId)throw Error('WhatsApp não conectado');
+   const order=saved.orders[data.id];
+   if(!order||order.chatId!==saved.groupId||order.status!=='pending')throw Error('Pedido pendente não encontrado');
+   if(order.priceRepliedAt)throw Error('Preço já respondido neste pedido');
+   const calc=priceDetails(order,data.group);
+   const quoted=await client.getMessageById(order.id);
+   if(!quoted)throw Error('Mensagem original não encontrada para responder');
+   await quoted.reply(makeComanda(calc.total),saved.groupId);
+   order.priceRepliedAt=new Date().toISOString();order.priceDetails=calc;save();
+   return reply(res,200,{ok:true,...calc});
+  }
   if(route==='/send'){
    if(status!=='ready'||!saved.groupId)throw Error('Conecte o WhatsApp e selecione o grupo');
    if(typeof data.text!=='string'||!data.text.trim()||data.text.length>4000)throw Error('Mensagem inválida');
