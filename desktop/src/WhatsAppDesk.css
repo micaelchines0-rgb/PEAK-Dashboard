@@ -120,3 +120,17 @@
 .wa-operations .wa-item em{font-size:10px;line-height:1.2;margin:3px 0!important}
 .wa-operations .wa-item .btn{padding:5px 9px!important;font-size:10px!important;line-height:1.2!important;min-height:0!important;margin:4px 0 0!important;border-radius:6px}
 .wa-chat form textarea{min-height:42px!important;max-height:130px;resize:vertical}
+
+/* Cartão de pedido no formato horizontal da referência. */
+.wa-operations .wa-order-card{background:#101117!important;border:0!important;border-left:3px solid #04aef4!important;border-radius:9px!important;padding:9px 11px!important;margin:5px 0!important;display:flex;flex-direction:column;gap:9px}
+.wa-order-top{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:11px;line-height:1.3}
+.wa-order-index{color:#8aa2c9;font-size:10px}
+.wa-order-top time{color:#9baac5;font-size:10px}
+.wa-order-top b{font-size:12px!important;margin-left:5px}
+.wa-order-phone{font-size:10px;color:#9fa7b8}
+.wa-order-body{font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+.wa-order-body a{color:#2d9eff;text-decoration:none;font-weight:600}
+.wa-order-body a:hover{text-decoration:underline}
+.wa-operations .wa-order-body p{font-size:12px!important;margin:0!important;white-space:pre-wrap}
+.wa-order-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;color:#9aa8c5;font-size:11px}
+.wa-operations .wa-order-bottom .btn{margin:0!important;background:#20212b!important;color:#9de2f1!important;border:0!important;padding:7px 10px!important}
