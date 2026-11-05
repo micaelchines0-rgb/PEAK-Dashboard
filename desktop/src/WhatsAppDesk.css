@@ -48,3 +48,28 @@
 
 /* Conector WhatsApp real */
 .wa-connect{display:grid;gap:8px;margin-bottom:12px}.wa-connect p{font-size:12px;line-height:1.5;overflow-wrap:anywhere}.wa-connect select{width:100%;max-width:100%;padding:9px;border-radius:8px;background:#181821;color:#fff;border:1px solid #4b4659}.wa-qr{display:grid;justify-items:center;gap:5px}.wa-qr img{display:block;max-width:100%;height:auto;padding:8px;background:white;border-radius:10px}.wa-chat form{margin-top:12px;display:grid;gap:8px}.wa-chat form textarea{width:100%;min-height:65px;padding:10px;background:#11121b;color:#fff;border:1px solid #454457;border-radius:8px}.wa-connect code{overflow-wrap:anywhere}
+
+/* Painéis centrais independentes: arraste o canto inferior direito de cada
+   painel para expandir ou reduzir, com rolagem interna do conteúdo. */
+.wa-operations{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+}
+.wa-operations>.wa-panel{
+  flex:0 0 auto!important;
+  box-sizing:border-box;
+  height:270px;
+  min-height:125px!important;
+  max-height:85vh!important;
+  resize:vertical!important;
+  overflow:auto!important;
+  scrollbar-width:thin;
+  scrollbar-color:#9e77ee transparent;
+}
+.wa-operations>.wa-panel::-webkit-resizer{
+  background:linear-gradient(135deg,transparent 43%,#a980f5 45%,#a980f5 57%,transparent 59%);
+}
+@media(max-width:950px){
+ .wa-operations>.wa-panel{height:270px;min-height:140px!important;max-height:80vh!important}
+}
