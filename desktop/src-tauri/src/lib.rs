@@ -33,7 +33,24 @@ fn authenticated()->Result<LoginSession,String>{
  let profile=profiles.into_iter().next().ok_or("Operador não autorizado")?;
  if !profile.active{return Err("Seu acesso foi bloqueado pelo administrador".into())}
  if profile.role!=session.role{return Err("Suas permissões foram alteradas. Faça login novamente".into())}
+ let access=client.post(format!("{SUPABASE_URL}/rest/v1/rpc/peak_operator_can_write"))
+  .header("apikey",SUPABASE_PUBLIC_KEY).bearer_auth(&session.access_token)
+  .json(&serde_json::json!({"p_operator":session.user_id})).send()
+  .map_err(|_|"Não foi possível consultar o fechamento financeiro".to_string())?;
+ if !access.status().is_success(){return Err("Não foi possível validar o expediente".into())}
+ let allowed:bool=access.json().map_err(|_|"Resposta financeira inválida".to_string())?;
+ if !allowed{return Err("Comissão PEAK pendente. Aguarde a baixa do administrador para voltar a operar.".into())}
  Ok(session)
+}
+#[tauri::command]
+fn operator_finance()->Result<serde_json::Value,String>{
+ let session=SESSION.lock().map_err(|_|"Erro de sessão".to_string())?.clone().ok_or("Faça login")?;
+ let client=reqwest::blocking::Client::builder().timeout(std::time::Duration::from_secs(10)).build().map_err(|e|e.to_string())?;
+ let response=client.post(format!("{SUPABASE_URL}/rest/v1/rpc/peak_my_finance"))
+  .header("apikey",SUPABASE_PUBLIC_KEY).bearer_auth(&session.access_token)
+  .json(&serde_json::json!({})).send().map_err(|_|"Sem conexão para consultar comissão".to_string())?;
+ if !response.status().is_success(){return Err("Não foi possível consultar a comissão".into())}
+ response.json().map_err(|_|"Resposta financeira inválida".into())
 }
 #[tauri::command]
 fn current_operator()->Option<SessionView>{SESSION.lock().ok()?.as_ref().map(|s|SessionView{user_id:s.user_id.clone(),name:s.name.clone(),role:s.role.clone()})}
@@ -176,6 +193,6 @@ fn export_closing()->Result<String,String>{
 #[cfg_attr(mobile,tauri::mobile_entry_point)]
 pub fn run(){
  tauri::Builder::default()
- .invoke_handler(tauri::generate_handler![login_operator,logout_operator,current_operator,list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update])
+ .invoke_handler(tauri::generate_handler![operator_finance,login_operator,logout_operator,current_operator,list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update])
  .run(tauri::generate_context!()).expect("Erro ao iniciar PEAK Dashboard");
 }
