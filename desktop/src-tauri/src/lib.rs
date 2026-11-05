@@ -192,9 +192,27 @@ fn export_closing()->Result<String,String>{
 }
 #[tauri::command]
 fn open_whatsapp_web()->Result<(),String>{authenticated()?;open::that("https://web.whatsapp.com/").map_err(|e|e.to_string())}
+#[tauri::command]
+fn whatsapp_bridge(route:String,payload:Option<serde_json::Value>)->Result<serde_json::Value,String>{
+ authenticated()?;
+ let allowed=["status","groups","select","messages","send","order"];
+ if !allowed.contains(&route.as_str()){return Err("Ação inválida".into())}
+ let home=dirs::home_dir().ok_or("Pasta do usuário indisponível")?;
+ let token=fs::read_to_string(home.join(".peak-whatsapp-bridge").join("token"))
+  .map_err(|_|"Conector WhatsApp não iniciado. Inicie o serviço local PEAK.".to_string())?;
+ let client=reqwest::blocking::Client::builder().timeout(std::time::Duration::from_secs(15))
+  .build().map_err(|e|e.to_string())?;
+ let url=format!("http://127.0.0.1:38741/{}",route);
+ let request=if let Some(body)=payload{client.post(&url).json(&body)}else{client.get(&url)};
+ let response=request.bearer_auth(token.trim()).send().map_err(|_|"Conector WhatsApp offline. Inicie o serviço local.".to_string())?;
+ let status=response.status();
+ let value:serde_json::Value=response.json().map_err(|e|e.to_string())?;
+ if !status.is_success(){return Err(value.get("error").and_then(|x|x.as_str()).unwrap_or("Erro no conector").to_string())}
+ Ok(value)
+}
 #[cfg_attr(mobile,tauri::mobile_entry_point)]
 pub fn run(){
  tauri::Builder::default()
- .invoke_handler(tauri::generate_handler![operator_finance,login_operator,logout_operator,current_operator,list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update,open_whatsapp_web])
+ .invoke_handler(tauri::generate_handler![operator_finance,login_operator,logout_operator,current_operator,list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update,open_whatsapp_web,whatsapp_bridge])
  .run(tauri::generate_context!()).expect("Erro ao iniciar PEAK Dashboard");
 }
