@@ -54,10 +54,10 @@ console.log('PEAK bridge startup; Chromium:',executablePath||'Puppeteer default'
 const client=new Client({authStrategy:new LocalAuth({clientId:'peak-'+operatorId,dataPath:path.join(base,'session')}),puppeteer:{headless:true,...(executablePath?{executablePath}:{}),args:['--no-first-run','--no-default-browser-check']}});
 client.on('qr',async value=>{status='qr';qr=await QRCode.toDataURL(value);});
 client.on('authenticated',()=>{status='authenticated';qr='';});
-client.on('ready',async()=>{status='ready';qr='';phone=client.info?.wid?.user||'';await loadGroups();});
+client.on('ready',()=>{status='ready';qr='';phone=client.info?.wid?.user||'';void loadGroups().catch(e=>{lastError='Falha ao carregar grupos: '+String(e?.message||e);console.error(lastError)});});
 client.on('auth_failure',error=>{status='error';lastError=String(error);});
 client.on('disconnected',reason=>{status='disconnected';lastError=String(reason);phone='';});
-async function loadGroups(){const chats=await client.getChats();groups=chats.filter(c=>c.isGroup).map(c=>({id:c.id._serialized,name:c.name}));}
+async function loadGroups(){const chats=await client.getChats();groups=chats.filter(c=>c.isGroup).map(c=>({id:c.id._serialized,name:c.name}));lastError='';}
 client.on('message',async m=>{
  if(!saved.groupId||m.from!==saved.groupId)return;
  const contact=await m.getContact().catch(()=>null);
@@ -95,7 +95,7 @@ const server=http.createServer(async(req,res)=>{
    save();return reply(res,200,{ok:true});
   }
   return reply(res,404,{error:'Not found'});
- }catch(e){return reply(res,400,{error:String(e.message||e)})}
+ }catch(e){console.error('WhatsApp API',route,String(e?.stack||e));return reply(res,400,{error:String(e.message||e)})}
 });
 server.listen(port,bind,()=>console.log(`PEAK WhatsApp ${operatorId} on ${bind}:${port}`));
 process.on('SIGINT',()=>{server.close();client.destroy().finally(()=>process.exit(0))});
