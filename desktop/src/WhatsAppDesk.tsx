@@ -8,10 +8,10 @@ function alertSound(){try{const ctx=new AudioContext();const o=ctx.createOscilla
 export default function WhatsAppDesk(){
  const [items,setItems]=useState<Msg[]>(()=>{try{return JSON.parse(localStorage.getItem(storageKey)||'[]')}catch{return[]}});
  const [sender,setSender]=useState('Blogueira teste'),[phone,setPhone]=useState('(81) 99999-0000'),[body,setBody]=useState('Preciso de 5 contas'),[sound,setSound]=useState(true);
+ const [inProgress,setInProgress]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem(storageKey+"-doing")||"[]")}catch{return[]}});
  useEffect(()=>{localStorage.setItem(storageKey,JSON.stringify(items))},[items]);
  useEffect(()=>{localStorage.setItem(storageKey+'-doing',JSON.stringify(inProgress))},[inProgress]);
  const [simOpen,setSimOpen]=useState(false);
- const [inProgress,setInProgress]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem(storageKey+"-doing")||"[]")}catch{return[]}});
  const [connectError,setConnectError]=useState('');
  const pending=items.filter(x=>x.order&&!x.done&&!inProgress.includes(x.id));
  const doing=items.filter(x=>inProgress.includes(x.id)&&!x.done);
