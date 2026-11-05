@@ -194,17 +194,52 @@ fn export_closing()->Result<String,String>{
 }
 #[tauri::command]
 fn open_whatsapp_web()->Result<(),String>{authenticated()?;open::that("https://web.whatsapp.com/").map_err(|e|e.to_string())}
+#[derive(Serialize,Deserialize,Clone)]
+struct RemoteWhatsApp { host:String, port:u16, token:String }
+fn remote_whatsapp_file()->Result<PathBuf,String>{Ok(folder()?.join("whatsapp-server.json"))}
+fn remote_whatsapp()->Option<RemoteWhatsApp>{
+ let raw=fs::read_to_string(remote_whatsapp_file().ok()?).ok()?;
+ serde_json::from_str(&raw).ok()
+}
+#[tauri::command]
+fn whatsapp_server_settings()->Result<serde_json::Value,String>{
+ authenticated()?;
+ if let Some(c)=remote_whatsapp(){Ok(serde_json::json!({"configured":true,"host":c.host,"port":c.port}))}
+ else{Ok(serde_json::json!({"configured":false}))}
+}
+#[tauri::command]
+fn whatsapp_configure_server(host:String,port:u16,token:String)->Result<(),String>{
+ authenticated()?;
+ if !host.starts_with("100.")||host.parse::<std::net::Ipv4Addr>().is_err(){return Err("Informe o IP 100.x.y.z do computador servidor no Tailscale".into())}
+ if port<1024||token.trim().len()<32||token.trim().len()>256{return Err("Porta ou chave de conexão inválida".into())}
+ let config=RemoteWhatsApp{host,port,token:token.trim().to_string()};
+ let path=remote_whatsapp_file()?;
+ fs::write(&path,serde_json::to_vec(&config).map_err(|e|e.to_string())?).map_err(|e|e.to_string())?;
+ Ok(())
+}
+#[tauri::command]
+fn whatsapp_remove_server()->Result<(),String>{
+ authenticated()?;
+ let path=remote_whatsapp_file()?;
+ if path.exists(){fs::remove_file(path).map_err(|e|e.to_string())?}
+ Ok(())
+}
 #[tauri::command]
 fn whatsapp_bridge(route:String,payload:Option<serde_json::Value>)->Result<serde_json::Value,String>{
  authenticated()?;
  let allowed=["status","groups","select","messages","send","order"];
  if !allowed.contains(&route.as_str()){return Err("Ação inválida".into())}
- let home=dirs::home_dir().ok_or("Pasta do usuário indisponível")?;
- let token=fs::read_to_string(home.join(".peak-whatsapp-bridge").join("token"))
-  .map_err(|_|"Conector WhatsApp não iniciado. Inicie o serviço local PEAK.".to_string())?;
+ let remote=remote_whatsapp();
+ let (url,token)=if let Some(c)=remote{
+  (format!("http://{}:{}/{}",c.host,c.port,route),c.token)
+ }else{
+  let home=dirs::home_dir().ok_or("Pasta do usuário indisponível")?;
+  let token=fs::read_to_string(home.join(".peak-whatsapp-bridge").join("local").join("token"))
+   .map_err(|_|"Conector local não iniciado. Configure o servidor PEAK.".to_string())?;
+  (format!("http://127.0.0.1:38741/{}",route),token)
+ };
  let client=reqwest::blocking::Client::builder().timeout(std::time::Duration::from_secs(15))
   .build().map_err(|e|e.to_string())?;
- let url=format!("http://127.0.0.1:38741/{}",route);
  let request=if let Some(body)=payload{client.post(&url).json(&body)}else{client.get(&url)};
  let response=request.bearer_auth(token.trim()).send().map_err(|_|"Conector WhatsApp offline. Inicie o serviço local.".to_string())?;
  let status=response.status();
@@ -265,6 +300,7 @@ pub fn run(){
  tauri::Builder::default()
  .manage(WhatsAppProcess(Mutex::new(None)))
  .setup(|app|{
+  if remote_whatsapp().is_some(){return Ok(())}
   let child=start_whatsapp_service(app.handle());
   match child{Ok(process)=>{if let Ok(mut guard)=app.state::<WhatsAppProcess>().0.lock(){*guard=Some(process)}},Err(error)=>eprintln!("{error}")}
   Ok(())
@@ -276,6 +312,6 @@ pub fn run(){
    }
   }
  })
- .invoke_handler(tauri::generate_handler![operator_finance,login_operator,logout_operator,current_operator,list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update,open_whatsapp_web,whatsapp_bridge,whatsapp_diagnostics,whatsapp_restart])
+ .invoke_handler(tauri::generate_handler![operator_finance,login_operator,logout_operator,current_operator,list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update,open_whatsapp_web,whatsapp_bridge,whatsapp_diagnostics,whatsapp_restart,whatsapp_server_settings,whatsapp_configure_server,whatsapp_remove_server])
  .run(tauri::generate_context!()).expect("Erro ao iniciar PEAK Dashboard");
 }
