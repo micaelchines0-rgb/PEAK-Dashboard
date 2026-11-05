@@ -292,23 +292,16 @@ fn whatsapp_diagnostics(app:tauri::AppHandle)->Result<String,String>{
  Ok(detail)
 }
 #[tauri::command]
-fn whatsapp_restart(app:tauri::AppHandle,state:tauri::State<WhatsAppProcess>)->Result<(),String>{
+fn whatsapp_restart(_app:tauri::AppHandle,state:tauri::State<WhatsAppProcess>)->Result<(),String>{
  authenticated()?;
  let mut guard=state.0.lock().map_err(|_|"Falha ao acessar processo".to_string())?;
  if let Some(mut child)=guard.take(){let _=child.kill();let _=child.wait();}
- *guard=Some(start_whatsapp_service(&app)?);
- Ok(())
+ return Err("Esta versão cliente usa o servidor PEAK remoto. Configure o servidor nas opções do WhatsApp.".into());
 }
 #[cfg_attr(mobile,tauri::mobile_entry_point)]
 pub fn run(){
  tauri::Builder::default()
  .manage(WhatsAppProcess(Mutex::new(None)))
- .setup(|app|{
-  if remote_whatsapp().is_some(){return Ok(())}
-  let child=start_whatsapp_service(app.handle());
-  match child{Ok(process)=>{if let Ok(mut guard)=app.state::<WhatsAppProcess>().0.lock(){*guard=Some(process)}},Err(error)=>eprintln!("{error}")}
-  Ok(())
- })
  .on_window_event(|window,event|{
   if let tauri::WindowEvent::Destroyed=event{
    if window.app_handle().webview_windows().len()<=1{
