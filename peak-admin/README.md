@@ -1,22 +1,28 @@
-# PEAK ADMIN (web)
+# PEAK ADMIN — Web (Beta)
 
-Painel administrativo para navegador, separado do aplicativo Tauri PEAK Dashboard para Windows.
+Painel web React + Vite conectado ao Supabase `pnigecdjotqaxktnmnkj`.
 
-## Arquitetura aprovada
+## Executar localmente
 
-- PEAK ADMIN: web, somente administrador autorizado gerencia operadores, remuneração, bloqueios e relatórios.
-- PEAK Dashboard: desktop Windows, operadores autenticados com username e senha; internet obrigatória para qualquer operação.
-- Supabase: Auth, perfis, operações, comissões históricas e RLS.
-- Administrador inicial: username `atx`. Nenhuma senha deve ser versionada no GitHub.
+```bash
+cd peak-admin
+npm install
+npm run dev
+```
 
-## Segurança e etapas pendentes
+## Funcionalidades implementadas
 
-1. Criar fluxo de provisionamento inicial do administrador sem senha hardcoded.
-2. Criar API autenticada para username + senha; não expor service-role key ao navegador nem ao desktop.
-3. Criar backend administrativo autorizado para criar/desativar operadores e alterar remuneração.
-4. Revalidar autorização no servidor a cada operação, bloquear em caso de perda de conexão.
-5. Registrar serviços no banco central com autoria, idempotência e auditoria antes de permitir fechamento.
-6. Implementar frontend web responsivo e publicar em hospedagem compatível com uso comercial.
-7. Testar Windows, autenticação, RLS, suspensão, quedas de internet e build antes da distribuição.
+- Login de administrador com nome de usuário + senha. Internamente, contas provisionadas usam `<username>@operators.peak.invalid` no Supabase Auth; o usuário nunca precisa informar e-mail.
+- Dashboard de métricas, listagem de serviços sincronizados, equipe e comissões.
+- Edge Function `peak-admin-operators` implantada no Supabase para cadastrar, ativar/bloquear operadores e alterar comissões; exige token válido e perfil admin ativo.
+- RLS para leitura administrativa, mantendo operadores restritos aos próprios dados.
 
-**Estado atual:** documentação da arquitetura. Este diretório ainda não contém o painel web executável.
+## Pendências para uso real
+
+- Provisionar com segurança a primeira conta de administrador `atx` (não foi criada; nunca incluir senha no repositório).
+- Conectar a autenticação por username da Dashboard Windows (a versão atual ainda usa e-mail).
+- Implementar sincronização de serviços do Windows para Supabase e políticas de auditoria/consistência.
+- Executar testes automatizados e build; publicar hospedagem compatível com uso comercial.
+- Implementar recuperação segura de acesso, paginação e histórico de remuneração robusto.
+
+**Atenção:** dados financeiros não aparecem até que a sincronização do desktop seja implementada. Não usar em produção ainda.
