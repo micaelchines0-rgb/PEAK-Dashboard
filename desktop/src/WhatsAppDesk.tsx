@@ -1,7 +1,8 @@
 import {invoke} from '@tauri-apps/api/core';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import './WhatsAppDesk.css';
-type Msg={id:string;chatId:string;sender:string;phone:string;body:string;at:string;quantity:number|null;order:boolean;status?:string;priceRepliedAt?:string;fromMe?:boolean};
+type EditOrder={group:'dragao'|'pinguim';body:string;rows:{tier:string;quantity:number;unit:number|null}[]};
+type Msg={id:string;chatId:string;sender:string;phone:string;body:string;at:string;quantity:number|null;order:boolean;status?:string;priceRepliedAt?:string;edit?:EditOrder;fromMe?:boolean};
 type Group={id:string;name:string};
 type Status={status:string;qr:string;phone:string;lastError:string;groupId:string;groups:Group[]};
 const api=<T,>(route:string,payload?:Record<string,unknown>)=>invoke<T>('whatsapp_bridge',{route,payload:payload??null});
@@ -17,6 +18,8 @@ export default function WhatsAppDesk(){
  const [diagnostics,setDiagnostics]=useState('');
  const [sound,setSound]=useState(true);
  const [busy,setBusy]=useState(false);
+ const [editingId,setEditingId]=useState<string|null>(null);
+ const [editDraft,setEditDraft]=useState<EditOrder|null>(null);
  const [orderGroups,setOrderGroups]=useState<Record<string,'dragao'|'pinguim'>>({});
  const [server,setServer]=useState<{configured:boolean;host?:string;port?:number}|null>(null);
  const [serverHost,setServerHost]=useState('');
@@ -80,10 +83,16 @@ export default function WhatsAppDesk(){
      <div className="wa-order-top"><span className="wa-order-index">{i+1}/{pending.length}</span><time>{new Date(m.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time><b style={{color:senderColor(m)}}>{m.sender||'Participante'}</b><span className="wa-order-phone">{m.phone?'+'+m.phone.replace(/^\+/,''):'Número indisponível'}</span></div>
      <div className="wa-order-body">{link?<><a href={link} target="_blank" rel="noopener noreferrer">{link}</a>{m.body.replace(link,'').trim()&&<p>{m.body.replace(link,'').trim()}</p>}</>:<p>{m.body}</p>}</div>
      <div className="wa-order-quantity">{m.quantity!==null?m.quantity+' contas':'Link identificado'}</div>
+     {editingId===m.id&&editDraft&&<div className="wa-order-editor">
+      <label>Grupo<select value={editDraft.group} onChange={e=>setEditDraft(v=>v?{...v,group:e.target.value as 'dragao'|'pinguim'}:v)}><option value="dragao">Dragão</option><option value="pinguim">Pinguim</option></select></label>
+      <label>Pedido / link<textarea value={editDraft.body} onChange={e=>setEditDraft(v=>v?{...v,body:e.target.value}:v)} rows={2}/></label>
+      <div className="wa-edit-rows">{editDraft.rows.map((row,i)=><div key={row.tier}><span>Depósito {row.tier}</span><input aria-label={'Quantidade '+row.tier} type="number" min="0" value={row.quantity} onChange={e=>setEditDraft(v=>v?{...v,rows:v.rows.map((x,j)=>j===i?{...x,quantity:Number(e.target.value)}:x)}:v)}/><input aria-label={'Preço unitário '+row.tier} type="number" min="0" step="0.01" placeholder="R$/conta" value={row.unit??''} onChange={e=>setEditDraft(v=>v?{...v,rows:v.rows.map((x,j)=>j===i?{...x,unit:e.target.value===''?null:Number(e.target.value)}:x)}:v)}/></div>)}</div>
+      <div className="wa-edit-buttons"><button type="button" disabled={busy} onClick={()=>void (async()=>{await action('edit-order',{id:m.id,edit:editDraft});setEditingId(null);setEditDraft(null);setOrderGroups(v=>({...v,[m.id]:editDraft.group}))})()}>Salvar alterações</button><button type="button" onClick={()=>{setEditingId(null);setEditDraft(null)}}>Cancelar</button></div>
+     </div>}
      <div className="wa-order-actions">
       <div className="wa-order-action-left">
        <div className="wa-order-choice"><button type="button" className={orderGroups[m.id]==='dragao'?'selected':''} onClick={()=>setOrderGroups(v=>({...v,[m.id]:'dragao'}))}>Dragão</button><button type="button" className={orderGroups[m.id]==='pinguim'?'selected':''} onClick={()=>setOrderGroups(v=>({...v,[m.id]:'pinguim'}))}>Pinguim</button></div>
-       <button type="button" className="wa-order-icon-btn" title="Editar — funcionalidade a definir" aria-label="Editar" disabled>✎</button>
+       <button type="button" className="wa-order-icon-btn" title="Editar pedido" aria-label="Editar" onClick={()=>{setEditingId(m.id);setEditDraft(m.edit?structuredClone(m.edit):{group:orderGroups[m.id]||'pinguim',body:m.body,rows:['10','11-15','15-18','19-25'].map((tier,i)=>({tier,quantity:i===0?(m.quantity||0):0,unit:i===0?(orderGroups[m.id]==='dragao'?5:6):null}))})}}>✎</button>
        <button type="button" title="Não fazemos — funcionalidade a definir" disabled>⊘ Não fazemos</button>
        <button type="button" title="Pôr em serviço — funcionalidade a definir" disabled>▷ Pôr em serviço</button>
        <button type="button" title="Criar Registro — funcionalidade a definir" disabled>⊞ Criar Registro</button>
