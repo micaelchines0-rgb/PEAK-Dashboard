@@ -178,7 +178,7 @@ const server=http.createServer(async(req,res)=>{
   if(route==='/send'){
    if(status!=='ready'||!saved.groupId)throw Error('Conecte o WhatsApp e selecione o grupo');
    if(typeof data.text!=='string'||!data.text.trim()||data.text.length>4000)throw Error('Mensagem inválida');
-   await client.sendMessage(saved.groupId,data.text.trim());return reply(res,200,{ok:true});
+   if(data.replyId){const original=await client.getMessageById(String(data.replyId));if(!original||original.from!==saved.groupId&&original.to!==saved.groupId)throw Error('Mensagem original não encontrada neste grupo');await original.reply(data.text.trim(),saved.groupId)}else{await client.sendMessage(saved.groupId,data.text.trim())}return reply(res,200,{ok:true});
   }
   if(route==='/order'){
    const order=saved.orders[data.id];if(!order||order.chatId!==saved.groupId)throw Error('Pedido não encontrado');
