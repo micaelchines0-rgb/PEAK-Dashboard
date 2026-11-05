@@ -24,6 +24,7 @@ let saved={groupId:'',orders:{}};
 try{saved={...saved,...JSON.parse(fs.readFileSync(statePath,'utf8'))}}catch{}
 const save=()=>fs.writeFileSync(statePath,JSON.stringify(saved),{mode:0o600});
 let qr='',status='starting',lastError='',phone='',groups=[],messages=[];
+let groupsLoading=null;
 const classify=body=>{
  const m=body.match(/\b(\d{1,5})\s*contas?\b|\bcontas?\s*(?:de\s*)?(\d{1,5})\b/i);
  const quantity=m?Number(m[1]||m[2]):null;
@@ -54,10 +55,15 @@ console.log('PEAK bridge startup; Chromium:',executablePath||'Puppeteer default'
 const client=new Client({authStrategy:new LocalAuth({clientId:'peak-'+operatorId,dataPath:path.join(base,'session')}),puppeteer:{headless:true,...(executablePath?{executablePath}:{}),args:['--no-first-run','--no-default-browser-check']}});
 client.on('qr',async value=>{status='qr';qr=await QRCode.toDataURL(value);});
 client.on('authenticated',()=>{status='authenticated';qr='';});
-client.on('ready',()=>{status='ready';qr='';phone=client.info?.wid?.user||'';void loadGroups().catch(e=>{lastError='Falha ao carregar grupos: '+String(e?.message||e);console.error(lastError)});});
+client.on('ready',()=>{status='ready';qr='';phone=client.info?.wid?.user||'';void refreshGroups();});
 client.on('auth_failure',error=>{status='error';lastError=String(error);});
 client.on('disconnected',reason=>{status='disconnected';lastError=String(reason);phone='';});
 async function loadGroups(){const chats=await client.getChats();groups=chats.filter(c=>c.isGroup).map(c=>({id:c.id._serialized,name:c.name}));lastError='';}
+function refreshGroups(){
+ if(status!=='ready'||groupsLoading)return groupsLoading;
+ groupsLoading=loadGroups().catch(e=>{lastError='Falha ao carregar grupos: '+String(e?.message||e);console.error(lastError)}).finally(()=>{groupsLoading=null});
+ return groupsLoading;
+}
 client.on('message',async m=>{
  if(!saved.groupId||m.from!==saved.groupId)return;
  const contact=await m.getContact().catch(()=>null);
@@ -80,7 +86,7 @@ const server=http.createServer(async(req,res)=>{
   }
   route=new URL(req.url,'http://localhost').pathname;
   if(route==='/status')return reply(res,200,{status,qr,phone,lastError,groupId:saved.groupId,groups});
-  if(route==='/groups'){if(status!=='ready')throw Error('WhatsApp desconectado');await loadGroups();return reply(res,200,{groups});}
+  if(route==='/groups'){if(status!=='ready')throw Error('WhatsApp desconectado');void refreshGroups();return reply(res,200,{groups,loading:!!groupsLoading,lastError});}
   if(route==='/select'){if(!groups.some(g=>g.id===data.groupId))throw Error('Grupo não encontrado');saved.groupId=data.groupId;messages=[];save();return reply(res,200,{ok:true});}
   if(route==='/messages')return reply(res,200,{messages,orders:Object.values(saved.orders).filter(o=>o.chatId===saved.groupId)});
   if(route==='/send'){
