@@ -19,6 +19,21 @@ jobs:
         with:
           workspaces: desktop/src-tauri -> target
       - run: npm install
+      - name: Generate PEAK Beta Windows icon
+        shell: pwsh
+        run: |
+          python -m pip install Pillow
+          @'
+          from PIL import Image, ImageDraw
+          from pathlib import Path
+          target = Path('src-tauri/icons/icon.ico')
+          target.parent.mkdir(parents=True, exist_ok=True)
+          im = Image.new('RGBA', (256, 256), '#071322')
+          d = ImageDraw.Draw(im)
+          d.rounded_rectangle((12, 12, 244, 244), radius=52, fill='#1677f2')
+          d.line([(55, 174), (108, 83), (143, 143), (169, 107), (205, 174)], fill='white', width=17, joint='curve')
+          im.save(target, format='ICO', sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])
+          '@ | python -
       - run: npm run build
       - run: npm run tauri build -- --bundles nsis
       - uses: actions/upload-artifact@v4
