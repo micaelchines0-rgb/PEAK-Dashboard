@@ -2,7 +2,7 @@ import {invoke} from '@tauri-apps/api/core';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import './WhatsAppDesk.css';
 type EditOrder={group:'dragao'|'pinguim';body:string;rows:{tier:string;quantity:number;unit:number|null}[]};
-type Msg={id:string;chatId:string;sender:string;phone:string;body:string;at:string;quantity:number|null;order:boolean;status?:string;priceRepliedAt?:string;edit?:EditOrder;fromMe?:boolean};
+type Msg={id:string;chatId:string;sender:string;phone:string;body:string;at:string;quantity:number|null;order:boolean;status?:string;priceRepliedAt?:string;edit?:EditOrder;receiptId?:string;receiptAt?:string;priceDetails?:{total:number};fromMe?:boolean};
 type Group={id:string;name:string};
 type Status={status:string;qr:string;phone:string;lastError:string;groupId:string;groups:Group[]};
 const api=<T,>(route:string,payload?:Record<string,unknown>)=>invoke<T>('whatsapp_bridge',{route,payload:payload??null});
@@ -19,6 +19,7 @@ export default function WhatsAppDesk(){
  const [diagnostics,setDiagnostics]=useState('');
  const [sound,setSound]=useState(true);
  const [busy,setBusy]=useState(false);
+ const [dismissedReceipts,setDismissedReceipts]=useState<string[]>([]);
  const [editingId,setEditingId]=useState<string|null>(null);
  const [editDraft,setEditDraft]=useState<EditOrder|null>(null);
  const [orderGroups,setOrderGroups]=useState<Record<string,'dragao'|'pinguim'>>({});
@@ -50,7 +51,11 @@ export default function WhatsAppDesk(){
  useEffect(()=>{messagesEndRef.current?.scrollIntoView({block:'end',behavior:'auto'});},[messages]);
  const pending=orders.filter(o=>o.status==='pending');
  const doing=orders.filter(o=>o.status==='doing');
+ const waiting=orders.filter(o=>o.status==='awaiting_payment');
+ const receiptAlert=waiting.find(o=>o.receiptId&&!dismissedReceipts.includes(o.receiptId));
  return <aside className="wa-desk" aria-label="Central WhatsApp">
+  {receiptAlert&&<div className="wa-receipt-overlay" role="dialog" aria-modal="true" aria-label="Comprovante recebido"><div className="wa-receipt-modal"><h2>Comprovante recebido</h2><p><b>{receiptAlert.sender}</b> · {receiptAlert.phone}</p><p>Pedido: {receiptAlert.body}</p><p>Valor da comanda: {receiptAlert.priceDetails?.total?.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})||'Não disponível'}</p><p className="wa-receipt-warning">Imagem ou documento recebido. Confira o comprovante e a entrada do pagamento antes de confirmar.</p><div className="wa-receipt-actions"><button type="button" disabled={busy} onClick={()=>void action('confirm-payment',{id:receiptAlert.id})}>Confirmar pagamento</button><button type="button" onClick={()=>setDismissedReceipts(v=>[...v,receiptAlert.receiptId!])}>Verificar depois</button></div></div></div>}
+  
   <div className="wa-title"><div><span className="eyebrow">CENTRAL DE MENSAGENS</span><h3>WhatsApp dos operadores</h3></div><span className="wa-preview">{connection?.status==='ready'?'CONECTADO':'DESCONECTADO'}</span></div>
   <div className="wa-columns">
    <section className="wa-panel wa-chat"><div className="wa-chat-head"><h4>{connection?.status==="ready"?(connection.groups.find(g=>g.id===connection.groupId)?.name||"Selecionar grupo"):"Conectar WhatsApp"}</h4><span className="wa-chat-status">{connection?.status==="ready"?"● Online":"● Offline"}</span></div>
@@ -103,6 +108,7 @@ export default function WhatsAppDesk(){
       <button type="button" className="wa-order-reply-price" disabled={busy||Boolean(m.priceRepliedAt)} onClick={()=>void action('quote-price',{id:m.id,...(orderGroups[m.id]?{group:orderGroups[m.id]}:{})})}>{m.priceRepliedAt?"Preço enviado":"Responder preço"}</button>
      </div>
     </article>})}</section>
+    <section className="wa-panel wa-awaiting"><h4>Aguardando pagamento <span>{waiting.length}</span></h4>{waiting.length===0?<div className="wa-empty">Nenhuma comanda aguardando comprovante</div>:waiting.map(m=><article className="wa-item" key={m.id}><b>{m.sender}</b><small>{m.phone}</small><p>{m.body}</p><em>{m.receiptId?'Comprovante recebido — conferir pagamento':'Aguardando comprovante'}</em>{m.receiptId&&<button type="button" className="btn primary" disabled={busy} onClick={()=>void action('confirm-payment',{id:m.id})}>Confirmar pagamento</button>}</article>)}</section>
     <section className="wa-panel wa-doing"><h4>Serviços sendo feitos <span>{doing.length}</span></h4>{doing.length===0?<div className="wa-empty">Nenhum serviço em andamento</div>:doing.map(m=><article className="wa-item" key={m.id}><b>{m.sender}</b><p>{m.body}</p><button className="btn primary" disabled={busy} onClick={()=>void action('order',{id:m.id,status:'done'})}>Concluir serviço</button></article>)}</section>
    </div>
   </div>
