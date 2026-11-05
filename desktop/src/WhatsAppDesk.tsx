@@ -1,7 +1,7 @@
 import {invoke} from '@tauri-apps/api/core';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import './WhatsAppDesk.css';
-type Msg={id:string;chatId:string;sender:string;phone:string;body:string;at:string;quantity:number|null;order:boolean;status?:string;fromMe?:boolean};
+type Msg={id:string;chatId:string;sender:string;phone:string;body:string;at:string;quantity:number|null;order:boolean;status?:string;priceRepliedAt?:string;fromMe?:boolean};
 type Group={id:string;name:string};
 type Status={status:string;qr:string;phone:string;lastError:string;groupId:string;groups:Group[]};
 const api=<T,>(route:string,payload?:Record<string,unknown>)=>invoke<T>('whatsapp_bridge',{route,payload:payload??null});
@@ -17,6 +17,7 @@ export default function WhatsAppDesk(){
  const [diagnostics,setDiagnostics]=useState('');
  const [sound,setSound]=useState(true);
  const [busy,setBusy]=useState(false);
+ const [orderGroups,setOrderGroups]=useState<Record<string,'dragao'|'pinguim'>>({});
  const [server,setServer]=useState<{configured:boolean;host?:string;port?:number}|null>(null);
  const [serverHost,setServerHost]=useState('');
  const [serverPort,setServerPort]=useState('38741');
@@ -81,14 +82,14 @@ export default function WhatsAppDesk(){
      <div className="wa-order-quantity">{m.quantity!==null?m.quantity+' contas':'Link identificado'}</div>
      <div className="wa-order-actions">
       <div className="wa-order-action-left">
-       <div className="wa-order-choice"><button type="button" title="Dragão — funcionalidade a definir" disabled>Dragão</button><button type="button" title="Pinguim — funcionalidade a definir" disabled>Pinguim</button></div>
+       <div className="wa-order-choice"><button type="button" className={orderGroups[m.id]==='dragao'?'selected':''} onClick={()=>setOrderGroups(v=>({...v,[m.id]:'dragao'}))}>Dragão</button><button type="button" className={orderGroups[m.id]==='pinguim'?'selected':''} onClick={()=>setOrderGroups(v=>({...v,[m.id]:'pinguim'}))}>Pinguim</button></div>
        <button type="button" className="wa-order-icon-btn" title="Editar — funcionalidade a definir" aria-label="Editar" disabled>✎</button>
        <button type="button" title="Não fazemos — funcionalidade a definir" disabled>⊘ Não fazemos</button>
        <button type="button" title="Pôr em serviço — funcionalidade a definir" disabled>▷ Pôr em serviço</button>
        <button type="button" title="Criar Registro — funcionalidade a definir" disabled>⊞ Criar Registro</button>
        <button type="button" className="wa-order-icon-btn" title="Registro visual — funcionalidade a definir" aria-label="Registro visual" disabled>▣</button>
       </div>
-      <button type="button" className="wa-order-reply-price" title="Responder preço — funcionalidade a definir" disabled>Responder preço</button>
+      <button type="button" className="wa-order-reply-price" disabled={busy||Boolean(m.priceRepliedAt)} onClick={()=>void action('quote-price',{id:m.id,...(orderGroups[m.id]?{group:orderGroups[m.id]}:{})})}>{m.priceRepliedAt?"Preço enviado":"Responder preço"}</button>
      </div>
     </article>})}</section>
     <section className="wa-panel wa-doing"><h4>Serviços sendo feitos <span>{doing.length}</span></h4>{doing.length===0?<div className="wa-empty">Nenhum serviço em andamento</div>:doing.map(m=><article className="wa-item" key={m.id}><b>{m.sender}</b><p>{m.body}</p><button className="btn primary" disabled={busy} onClick={()=>void action('order',{id:m.id,status:'done'})}>Concluir serviço</button></article>)}</section>
