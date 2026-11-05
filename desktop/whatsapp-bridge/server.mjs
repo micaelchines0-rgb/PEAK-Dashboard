@@ -25,6 +25,8 @@ try{saved={...saved,...JSON.parse(fs.readFileSync(statePath,'utf8'))}}catch{}
 const save=()=>fs.writeFileSync(statePath,JSON.stringify(saved),{mode:0o600});
 let qr='',status='starting',lastError='',phone='',groups=[],messages=[];
 let groupsLoading=null;
+let lastGroupAttempt=0;
+const GROUP_REFRESH_COOLDOWN_MS=30000;
 const classify=body=>{
  const m=body.match(/\b(\d{1,5})\s*contas?\b|\bcontas?\s*(?:de\s*)?(\d{1,5})\b/i);
  const quantity=m?Number(m[1]||m[2]):null;
@@ -61,7 +63,14 @@ client.on('disconnected',reason=>{status='disconnected';lastError=String(reason)
 async function loadGroups(){const chats=await client.getChats();groups=chats.filter(c=>c.isGroup).map(c=>({id:c.id._serialized,name:c.name}));lastError='';}
 function refreshGroups(){
  if(status!=='ready'||groupsLoading)return groupsLoading;
- groupsLoading=loadGroups().catch(e=>{lastError='Falha ao carregar grupos: '+String(e?.message||e);console.error(lastError)}).finally(()=>{groupsLoading=null});
+ if(Date.now()-lastGroupAttempt<GROUP_REFRESH_COOLDOWN_MS)return null;
+ lastGroupAttempt=Date.now();
+ groupsLoading=loadGroups().catch(e=>{
+  const detail=e?.stack||e?.message||String(e);
+  lastError='Falha ao carregar grupos: '+String(e?.message||e);
+  console.error('PEAK groups error:',detail);
+  console.error('PEAK groups context:',JSON.stringify({status,chrome:executablePath||'default',operatorId}));
+ }).finally(()=>{groupsLoading=null});
  return groupsLoading;
 }
 client.on('message',async m=>{
