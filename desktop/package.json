@@ -1,7 +1,7 @@
 {
   "name": "peak-dashboard",
   "private": true,
-  "version": "11.3.6",
+  "version": "11.3.7",
   "type": "module",
   "scripts": {
     "dev": "vite",
