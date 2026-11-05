@@ -1,4 +1,5 @@
 name: Publish PEAK Desktop Update
+# Release v11.2.0 after validating the Windows build.
 on:
   push:
     branches: [feature/operator-login]
