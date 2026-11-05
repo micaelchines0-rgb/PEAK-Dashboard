@@ -115,7 +115,11 @@ function captureMessage(m){
   const result=outgoing?{order:false}:classify(body);
   const sender=outgoing?'Você':(m._data?.notifyName||m.author||'Participante');
   const senderPhone=outgoing?(phone||m.from||'').split('@')[0]:(m.author||m._data?.author||'').split('@')[0];
-  const item={id,chatId,sender,phone:senderPhone,body,at:new Date((m.timestamp||Date.now()/1000)*1000).toISOString(),fromMe:outgoing,...result};
+  const item={id,chatId,sender,phone:senderPhone,hasMedia:Boolean(m.hasMedia),mediaType:String(m.type||''),body,at:new Date((m.timestamp||Date.now()/1000)*1000).toISOString(),fromMe:outgoing,...result};
+  if(!outgoing&&m.hasMedia&&['image','document'].includes(String(m.type||''))){
+   const candidates=Object.values(saved.orders).filter(o=>o.chatId===chatId&&o.status==='awaiting_payment'&&!o.receiptId&&o.phone&&senderPhone&&o.phone===senderPhone);
+   if(candidates.length===1){candidates[0].receiptId=id;candidates[0].receiptAt=item.at;save();}
+  }
   messages=[...messages,item].slice(-300);
   if(result.order&&!saved.orders[id]){saved.orders[id]={status:'pending',...item};save();}
   console.log(outgoing?'Mensagem enviada no grupo:':'Mensagem recebida no grupo:',id);
@@ -149,6 +153,12 @@ const server=http.createServer(async(req,res)=>{
   if(route==='/groups'){if(status!=='ready')throw Error('WhatsApp desconectado');void refreshGroups();return reply(res,200,{groups,loading:!!groupsLoading,lastError});}
   if(route==='/select'){if(!groups.some(g=>g.id===data.groupId))throw Error('Grupo não encontrado');saved.groupId=data.groupId;messages=[];save();return reply(res,200,{ok:true});}
   if(route==='/messages')return reply(res,200,{messages,orders:Object.values(saved.orders).filter(o=>o.chatId===saved.groupId)});
+  if(route==='/confirm-payment'){
+   const order=saved.orders[data.id];
+   if(!order||order.chatId!==saved.groupId||order.status!=='awaiting_payment'||!order.receiptId)throw Error('Comprovante pendente ou pedido não encontrado');
+   order.status='doing';order.paymentConfirmedAt=new Date().toISOString();save();
+   return reply(res,200,{ok:true});
+  }
   if(route==='/edit-order'){
    const order=saved.orders[data.id];
    if(!order||order.chatId!==saved.groupId||order.status!=='pending')throw Error('Pedido pendente não encontrado');
@@ -172,7 +182,7 @@ const server=http.createServer(async(req,res)=>{
    const quoted=await client.getMessageById(order.id);
    if(!quoted)throw Error('Mensagem original não encontrada para responder');
    await quoted.reply(makeComanda(calc.total),saved.groupId);
-   order.priceRepliedAt=new Date().toISOString();order.priceDetails=calc;save();
+   order.priceRepliedAt=new Date().toISOString();order.priceDetails=calc;order.status='awaiting_payment';save();
    return reply(res,200,{ok:true,...calc});
   }
   if(route==='/send'){
