@@ -231,7 +231,7 @@ async fn whatsapp_bridge(route:String,payload:Option<serde_json::Value>)->Result
 }
 fn whatsapp_bridge_blocking(route:String,payload:Option<serde_json::Value>)->Result<serde_json::Value,String>{
  authenticated()?;
- let allowed=["status","groups","select","messages","send","order"];
+ let allowed=["status","groups","select","messages","send","order","quote-price"];
  if !allowed.contains(&route.as_str()){return Err("Ação inválida".into())}
  let remote=remote_whatsapp();
  let (url,token)=if let Some(c)=remote{
