@@ -49,7 +49,7 @@ export default function WhatsAppDesk({onRegister}:{onRegister?:(data:{client:str
  useEffect(()=>{void refresh();const timer=setInterval(()=>{if(!document.hidden)void refresh()},5000);return()=>clearInterval(timer)},[refresh]);
  async function action(route:string,payload:Record<string,unknown>){setBusy(true);try{await api(route,payload);setError('');await refresh()}catch(e){setError(String(e))}finally{setBusy(false)}}
  useEffect(()=>{messagesEndRef.current?.scrollIntoView({block:'end',behavior:'auto'});},[messages]);
- const pending=orders.filter(o=>o.status==='pending');
+ const pending=orders.filter(o=>o.status==='pending'||o.status==='awaiting_payment');
  const doing=orders.filter(o=>o.status==='doing');
  const waiting=orders.filter(o=>o.status==='awaiting_payment');
  const receiptAlert=waiting.find(o=>o.receiptId&&!dismissedReceipts.includes(o.receiptId));
@@ -89,7 +89,7 @@ export default function WhatsAppDesk({onRegister}:{onRegister?:(data:{client:str
     <section className="wa-panel wa-pending"><h4>Pedidos pendentes <span>{pending.length}</span></h4>{pending.length===0?<div className="wa-empty">Nenhum pedido pendente</div>:pending.map((m,i)=>{const link=m.body.match(/https?:\/\/[^\s]+/i)?.[0];return <article className="wa-item wa-order wa-order-card" key={m.id}>
      <div className="wa-order-top"><span className="wa-order-index">{i+1}/{pending.length}</span><time>{new Date(m.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time><b style={{color:senderColor(m)}}>{m.sender||'Participante'}</b><span className="wa-order-phone">{m.phone?'+'+m.phone.replace(/^\+/,''):'Número indisponível'}</span></div>
      <div className="wa-order-body">{link?<><a href={link} target="_blank" rel="noopener noreferrer">{link}</a>{m.body.replace(link,'').trim()&&<p>{m.body.replace(link,'').trim()}</p>}</>:<p>{m.body}</p>}</div>
-     <div className="wa-order-quantity">{m.quantity!==null?m.quantity+' contas':'Link identificado'}</div>
+     <div className="wa-order-quantity">{m.quantity!==null?m.quantity+' contas':'Link identificado'}{m.status==='awaiting_payment'&&<span className="wa-payment-status"> · {m.receiptId?'Comprovante recebido — conferir pagamento':'Aguardando comprovante'}</span>}</div>
      {editingId===m.id&&editDraft&&<div className="wa-order-editor">
       <label>Grupo<select value={editDraft.group} onChange={e=>setEditDraft(v=>v?{...v,group:e.target.value as 'dragao'|'pinguim'}:v)}><option value="dragao">Dragão</option><option value="pinguim">Pinguim</option></select></label>
       <label>Pedido / link<textarea value={editDraft.body} onChange={e=>setEditDraft(v=>v?{...v,body:e.target.value}:v)} rows={2}/></label>
@@ -105,10 +105,11 @@ export default function WhatsAppDesk({onRegister}:{onRegister?:(data:{client:str
        <button type="button" title="Criar Registro — funcionalidade a definir" disabled>⊞ Criar Registro</button>
        <button type="button" className="wa-order-icon-btn" title="Registro visual — funcionalidade a definir" aria-label="Registro visual" disabled>▣</button>
       </div>
+      {m.status==='awaiting_payment'&&m.receiptId&&<button type="button" className="wa-order-reply-price" disabled={busy} onClick={()=>void action('confirm-payment',{id:m.id})}>Confirmar pagamento</button>}
       <button type="button" className="wa-order-reply-price" disabled={busy||Boolean(m.priceRepliedAt)} onClick={()=>void action('quote-price',{id:m.id,...(orderGroups[m.id]?{group:orderGroups[m.id]}:{})})}>{m.priceRepliedAt?"Preço enviado":"Responder preço"}</button>
      </div>
     </article>})}</section>
-    <section className="wa-panel wa-awaiting"><h4>Aguardando pagamento <span>{waiting.length}</span></h4>{waiting.length===0?<div className="wa-empty">Nenhuma comanda aguardando comprovante</div>:waiting.map(m=><article className="wa-item" key={m.id}><b>{m.sender}</b><small>{m.phone}</small><p>{m.body}</p><em>{m.receiptId?'Comprovante recebido — conferir pagamento':'Aguardando comprovante'}</em>{m.receiptId&&<button type="button" className="btn primary" disabled={busy} onClick={()=>void action('confirm-payment',{id:m.id})}>Confirmar pagamento</button>}</article>)}</section>
+
     <section className="wa-panel wa-doing"><h4>Serviços sendo feitos <span>{doing.length}</span></h4>{doing.length===0?<div className="wa-empty">Nenhum serviço em andamento</div>:doing.map(m=><article className="wa-item wa-doing-card" key={m.id}><div className="wa-doing-head"><b>{m.sender}</b><small>{m.phone}</small></div><p>{m.body}</p><div className="wa-doing-actions"><button type="button" className="btn ghost" onClick={()=>{setEditingId(m.id);setEditDraft(m.edit?structuredClone(m.edit):{group:orderGroups[m.id]||'pinguim',body:m.body,rows:['10','11-15','15-18','19-25'].map(tier=>({tier,quantity:0,unit:null}))})}}>✎ Editar</button><button type="button" className="btn ghost" disabled={busy} onClick={()=>{if(window.confirm('Enviar mensagem de conclusão e finalizar este serviço?'))void action('complete-order',{id:m.id})}}>Conclusão</button><button type="button" className="btn primary" onClick={()=>{const link=m.body.match(/https?:\/\/[^\s]+/i)?.[0]||'';onRegister?.({client:m.sender||'',phone:m.phone||'',link,blogger:m.priceDetails?.total||0})}}>Registrar</button></div>{editingId===m.id&&<div className="wa-doing-edit"><label>Observações / pedido<textarea rows={2} value={editDraft?.body||''} onChange={e=>setEditDraft(v=>v?{...v,body:e.target.value}:v)}/></label><button type="button" disabled={busy} onClick={()=>void (async()=>{if(!editDraft)return;setBusy(true);try{await api('edit-service',{id:m.id,body:editDraft.body});setEditingId(null);setEditDraft(null);await refresh()}catch(e){setError(String(e))}finally{setBusy(false)}})()}>Salvar edição</button><button type="button" onClick={()=>{setEditingId(null);setEditDraft(null)}}>Cancelar</button><small>O valor pago permanece bloqueado após a confirmação.</small></div>}</article>)}</section>
    </div>
   </div>
