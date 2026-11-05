@@ -58,11 +58,13 @@ fn database()->Result<Connection,String>{
  let db=folder()?.join("peak.sqlite3");
  let c=Connection::open(db).map_err(|e|e.to_string())?;
  c.execute_batch("CREATE TABLE IF NOT EXISTS orders(id INTEGER PRIMARY KEY AUTOINCREMENT,created TEXT NOT NULL,client TEXT NOT NULL,phone TEXT,link TEXT,deposit REAL NOT NULL,withdrawal REAL NOT NULL,blogger REAL NOT NULL);CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY,v TEXT);").map_err(|e|e.to_string())?;
+ let has_owner:bool=c.prepare("PRAGMA table_info(orders)").map_err(|e|e.to_string())?.query_map([],|r|r.get::<_,String>(1)).map_err(|e|e.to_string())?.filter_map(Result::ok).any(|n|n=="operator_id");
+ if !has_owner {c.execute("ALTER TABLE orders ADD COLUMN operator_id TEXT",[]).map_err(|e|e.to_string())?;}
  Ok(c)
 }
-fn read_orders(c:&Connection)->Result<Vec<Order>,String>{
- let mut stmt=c.prepare("SELECT id,created,client,COALESCE(phone,''),COALESCE(link,''),deposit,withdrawal,blogger FROM orders ORDER BY id DESC").map_err(|e|e.to_string())?;
- let iter=stmt.query_map([],|r|Ok(Order{id:r.get(0)?,created:r.get(1)?,client:r.get(2)?,phone:r.get(3)?,link:r.get(4)?,deposit:r.get(5)?,withdrawal:r.get(6)?,blogger:r.get(7)?})).map_err(|e|e.to_string())?;
+fn read_orders(c:&Connection,session:&LoginSession)->Result<Vec<Order>,String>{
+ let mut stmt=c.prepare("SELECT id,created,client,COALESCE(phone,''),COALESCE(link,''),deposit,withdrawal,blogger FROM orders WHERE operator_id=? OR (?=1 AND operator_id IS NULL) ORDER BY id DESC").map_err(|e|e.to_string())?;
+ let iter=stmt.query_map(params![session.user_id,if session.role=="admin"{1}else{0}],|r|Ok(Order{id:r.get(0)?,created:r.get(1)?,client:r.get(2)?,phone:r.get(3)?,link:r.get(4)?,deposit:r.get(5)?,withdrawal:r.get(6)?,blogger:r.get(7)?})).map_err(|e|e.to_string())?;
  iter.collect::<Result<Vec<_>,_>>().map_err(|e|e.to_string())
 }
 fn validate(x:&OrderInput)->Result<(),String>{
@@ -71,18 +73,18 @@ fn validate(x:&OrderInput)->Result<(),String>{
  Ok(())
 }
 #[tauri::command]
-fn list_orders()->Result<Vec<Order>,String>{authenticated()?;read_orders(&database()?)}
+fn list_orders()->Result<Vec<Order>,String>{let session=authenticated()?;read_orders(&database()?,&session)}
 #[tauri::command]
 fn save_order(input:OrderInput,id:Option<i64>)->Result<(),String>{
- authenticated()?;validate(&input)?;let c=database()?;
+ let session=authenticated()?;validate(&input)?;let c=database()?;
  if let Some(id)=id {
-  c.execute("UPDATE orders SET client=?,phone=?,link=?,deposit=?,withdrawal=?,blogger=? WHERE id=?",params![input.client.trim(),input.phone,input.link,input.deposit,input.withdrawal,input.blogger,id]).map_err(|e|e.to_string())?;
+  c.execute("UPDATE orders SET client=?,phone=?,link=?,deposit=?,withdrawal=?,blogger=? WHERE id=? AND (operator_id=? OR (?=1 AND operator_id IS NULL))",params![input.client.trim(),input.phone,input.link,input.deposit,input.withdrawal,input.blogger,id,session.user_id,if session.role=="admin"{1}else{0}]).map_err(|e|e.to_string())?;
  }else{
-  c.execute("INSERT INTO orders(created,client,phone,link,deposit,withdrawal,blogger) VALUES(?,?,?,?,?,?,?)",params![chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string(),input.client.trim(),input.phone,input.link,input.deposit,input.withdrawal,input.blogger]).map_err(|e|e.to_string())?;
+  c.execute("INSERT INTO orders(created,client,phone,link,deposit,withdrawal,blogger,operator_id) VALUES(?,?,?,?,?,?,?,?)",params![chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string(),input.client.trim(),input.phone,input.link,input.deposit,input.withdrawal,input.blogger,session.user_id]).map_err(|e|e.to_string())?;
  }Ok(())
 }
 #[tauri::command]
-fn delete_order(id:i64)->Result<(),String>{authenticated()?;database()?.execute("DELETE FROM orders WHERE id=?",params![id]).map_err(|e|e.to_string())?;Ok(())}
+fn delete_order(id:i64)->Result<(),String>{let session=authenticated()?;database()?.execute("DELETE FROM orders WHERE id=? AND (operator_id=? OR (?=1 AND operator_id IS NULL))",params![id,session.user_id,if session.role=="admin"{1}else{0}]).map_err(|e|e.to_string())?;Ok(())}
 #[tauri::command]
 fn get_notes()->Result<String,String>{
  authenticated()?;let c=database()?;let mut stmt=c.prepare("SELECT v FROM meta WHERE k='notes'").map_err(|e|e.to_string())?;
@@ -97,7 +99,7 @@ fn set_notes(text:String)->Result<(),String>{
 fn open_data_folder()->Result<(),String>{authenticated()?;open::that(folder()?).map_err(|e|e.to_string())}
 #[tauri::command]
 fn export_closing()->Result<String,String>{
- authenticated()?;let mut c=database()?;let rows=read_orders(&c)?;
+ let session=authenticated()?;let mut c=database()?;let rows=read_orders(&c,&session)?;
  if rows.is_empty(){return Err("Nenhuma operação para fechar".into())}
  let dir=folder()?.join("Fechamentos");fs::create_dir_all(&dir).map_err(|e|e.to_string())?;
  let file=dir.join(format!("Fechamento_{}.csv",chrono::Local::now().format("%Y-%m-%d_%H-%M-%S")));
@@ -108,7 +110,7 @@ fn export_closing()->Result<String,String>{
  }
  fs::write(&file,csv).map_err(|e|e.to_string())?;
  let tx=c.transaction().map_err(|e|e.to_string())?;
- tx.execute("DELETE FROM orders",[]).map_err(|e|e.to_string())?;
+ tx.execute("DELETE FROM orders WHERE operator_id=? OR (?=1 AND operator_id IS NULL)",params![session.user_id,if session.role=="admin"{1}else{0}]).map_err(|e|e.to_string())?;
  tx.commit().map_err(|e|e.to_string())?;
  Ok(file.display().to_string())
 }
