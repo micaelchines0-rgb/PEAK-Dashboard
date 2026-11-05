@@ -1,0 +1,1 @@
+[package]\nname = "peak-dashboard"\nversion = "0.10.0"\nedition = "2021"\n\n[lib]\nname = "peak_dashboard_lib"\ncrate-type = ["staticlib", "cdylib", "rlib"]\n\n[build-dependencies]\ntauri-build = { version = "2", features = [] }\n\n[dependencies]\ntauri = { version = "2", features = [] }\n
