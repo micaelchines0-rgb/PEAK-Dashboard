@@ -2,6 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import crypto from 'node:crypto';
 import {Client,LocalAuth} from 'whatsapp-web.js';
 import QRCode from 'qrcode';
@@ -21,7 +22,7 @@ const classify=body=>{
  const quantity=m?Number(m[1]||m[2]):null;
  return {quantity,order:quantity!==null||/(?:https?:\/\/|www\.)\S+/i.test(body)};
 };
-const chromeRoot=path.join(import.meta.dirname||path.dirname(new URL(import.meta.url).pathname),'puppeteer-cache','chrome');
+const chromeRoot=path.join(path.dirname(fileURLToPath(import.meta.url)),'puppeteer-cache','chrome');
 function locateChrome(dir,depth=0){
  if(depth>5||!fs.existsSync(dir))return '';
  for(const item of fs.readdirSync(dir,{withFileTypes:true})){
