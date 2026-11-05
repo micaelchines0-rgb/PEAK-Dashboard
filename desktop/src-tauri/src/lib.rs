@@ -18,7 +18,23 @@ struct AuthUser { id:String }
 struct ProfileReply { display_name:String,role:String,active:bool }
 #[derive(Serialize)]
 struct SessionView { user_id:String,name:String,role:String }
-fn authenticated()->Result<LoginSession,String>{SESSION.lock().map_err(|_|"Erro de sessão".to_string())?.clone().ok_or_else(||"Faça login para acessar os serviços".into())}
+fn authenticated()->Result<LoginSession,String>{
+ let session=SESSION.lock().map_err(|_|"Erro de sessão".to_string())?.clone().ok_or_else(||"Faça login para acessar os serviços".to_string())?;
+ // Fail closed: validate the token and active profile with Supabase for every protected operation.
+ let client=reqwest::blocking::Client::builder().timeout(std::time::Duration::from_secs(8)).build().map_err(|_|"Não foi possível verificar a conexão".to_string())?;
+ let auth=client.get(format!("{SUPABASE_URL}/auth/v1/user")).header("apikey",SUPABASE_PUBLIC_KEY).bearer_auth(&session.access_token).send().map_err(|_|"Sem conexão com o servidor. Operação bloqueada.".to_string())?;
+ if !auth.status().is_success(){return Err("Sessão expirada. Faça login novamente.".into())}
+ let user:AuthUser=auth.json().map_err(|_|"Não foi possível validar sua sessão".to_string())?;
+ if user.id!=session.user_id{return Err("Sessão inválida".into())}
+ let response=client.get(format!("{SUPABASE_URL}/rest/v1/peak_profiles?user_id=eq.{}&select=display_name,role,active",session.user_id))
+  .header("apikey",SUPABASE_PUBLIC_KEY).bearer_auth(&session.access_token).send().map_err(|_|"Sem conexão com o servidor. Operação bloqueada.".to_string())?;
+ if !response.status().is_success(){return Err("Não foi possível validar sua permissão".into())}
+ let profiles:Vec<ProfileReply>=response.json().map_err(|_|"Resposta de permissão inválida".to_string())?;
+ let profile=profiles.into_iter().next().ok_or("Operador não autorizado")?;
+ if !profile.active{return Err("Seu acesso foi bloqueado pelo administrador".into())}
+ if profile.role!=session.role{return Err("Suas permissões foram alteradas. Faça login novamente".into())}
+ Ok(session)
+}
 #[tauri::command]
 fn current_operator()->Option<SessionView>{SESSION.lock().ok()?.as_ref().map(|s|SessionView{user_id:s.user_id.clone(),name:s.name.clone(),role:s.role.clone()})}
 #[tauri::command]
