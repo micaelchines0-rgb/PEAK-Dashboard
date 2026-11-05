@@ -47,22 +47,7 @@ jobs:
           $version = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
           if ($env:RELEASE_VERSION -and $version -ne $env:RELEASE_VERSION) { throw "Configured version differs from requested release" }
           if (-not $version.StartsWith('11.')) { throw "Only V11 releases supported" }
-      - name: Bundle WhatsApp runtime and Chromium
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Push-Location whatsapp-bridge
-          npm install --omit=dev
-          if ($LASTEXITCODE -ne 0) { throw "WhatsApp npm install failed" }
-          New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item server.mjs dist/server.mjs
-          Copy-Item -Recurse node_modules dist/node_modules
-          Copy-Item (Get-Command node).Source dist/node.exe
-          npx --no-install puppeteer browsers install chrome --path dist/puppeteer-cache
-          if ($LASTEXITCODE -ne 0) { throw "Chromium installation failed" }
-          if (-not (Test-Path dist/node.exe)) { throw "Node runtime missing" }
-          if (-not (Test-Path dist/puppeteer-cache/chrome)) { throw "Chromium missing" }
-          Pop-Location
+      # Cliente leve: o WhatsApp funciona no servidor PEAK separado.
       - name: Build Windows NSIS installer
         run: npm run tauri build -- --bundles nsis
       - name: Generate SHA256 checksum
