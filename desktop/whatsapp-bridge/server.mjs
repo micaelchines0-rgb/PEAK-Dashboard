@@ -90,7 +90,7 @@ function captureMessage(m){
   // Respostas dos operadores não são pedidos novos.
   const result=outgoing?{order:false}:classify(body);
   const sender=outgoing?'Você':(m._data?.notifyName||m.author||'Participante');
-  const senderPhone=outgoing?(phone||m.from||'').split('@')[0]:(m.author||m.from).split('@')[0];
+  const senderPhone=outgoing?(phone||m.from||'').split('@')[0]:(m.author||m._data?.author||'').split('@')[0];
   const item={id,chatId,sender,phone:senderPhone,body,at:new Date((m.timestamp||Date.now()/1000)*1000).toISOString(),fromMe:outgoing,...result};
   messages=[...messages,item].slice(-300);
   if(result.order&&!saved.orders[id]){saved.orders[id]={status:'pending',...item};save();}
@@ -98,7 +98,10 @@ function captureMessage(m){
   if(!outgoing){
    void Promise.resolve().then(()=>m.getContact()).then(contact=>{
     const name=contact?.pushname||contact?.name;
-    if(name){item.sender=name;const order=saved.orders[id];if(order){order.sender=name;save();}}
+    const number=contact?.number||contact?.id?.user;
+    if(name)item.sender=name;
+    if(number)item.phone=String(number).split('@')[0];
+    const order=saved.orders[id];if(order){if(name)order.sender=name;if(number)order.phone=item.phone;save();}
    }).catch(e=>console.warn('Contato indisponível:',String(e?.message||e)));
   }
  }catch(e){console.error('Erro ao processar mensagem:',e?.stack||e)}
