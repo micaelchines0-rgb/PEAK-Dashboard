@@ -153,3 +153,14 @@
 .wa-edit-buttons{display:flex;gap:8px}
 .wa-edit-buttons button{border:1px solid #525a70;border-radius:6px;padding:7px 10px;background:#262b3d;color:white;cursor:pointer}
 .wa-order-choice button.selected{background:#364c68;color:#fff}
+
+.wa-chat .wa-message-row{display:flex;align-items:center;gap:5px;max-width:100%;align-self:flex-start}
+.wa-chat .wa-message-row-outgoing{align-self:flex-end;flex-direction:row-reverse}
+.wa-chat .wa-message-row .wa-bubble{max-width:min(85%,480px);align-self:auto}
+.wa-reply-arrow{border:0;background:transparent;color:#91a2bf;cursor:pointer;padding:4px;font-size:15px;opacity:.65;transition:opacity .15s}
+.wa-reply-arrow:hover,.wa-reply-arrow:focus-visible{opacity:1;color:#5ed3f4}
+.wa-reply-preview{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#202735;border-left:3px solid #58c3ef;border-radius:6px;gap:12px}
+.wa-reply-preview span{min-width:0;display:flex;flex-direction:column;gap:2px}
+.wa-reply-preview b{font-size:11px}
+.wa-reply-preview small{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wa-reply-preview button{border:0;background:transparent;color:#d3d7e0;font-size:18px;cursor:pointer}
