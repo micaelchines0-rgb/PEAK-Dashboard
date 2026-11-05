@@ -70,9 +70,11 @@ fn export_closing()->Result<String,String>{
  tx.commit().map_err(|e|e.to_string())?;
  Ok(file.display().to_string())
 }
+#[tauri::command]
+fn open_whatsapp_web()->Result<(),String>{open::that("https://web.whatsapp.com/").map_err(|e|e.to_string())}
 #[cfg_attr(mobile,tauri::mobile_entry_point)]
 pub fn run(){
  tauri::Builder::default()
- .invoke_handler(tauri::generate_handler![list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update])
+ .invoke_handler(tauri::generate_handler![list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update,open_whatsapp_web])
  .run(tauri::generate_context!()).expect("Erro ao iniciar PEAK Dashboard");
 }
