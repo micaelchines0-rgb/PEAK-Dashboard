@@ -5,6 +5,7 @@ use std::{fs, path::PathBuf};
 use tauri::Manager;
 use std::sync::Mutex;
 use std::process::{Child,Command,Stdio};
+use std::io::Read;
 
 const SUPABASE_URL: &str = "https://pnigecdjotqaxktnmnkj.supabase.co";
 const SUPABASE_PUBLIC_KEY: &str = "sb_publishable_hvV4gGkZMfFCFD8ZrrTkAg_vPN1n31b";
@@ -212,15 +213,41 @@ fn whatsapp_bridge(route:String,payload:Option<serde_json::Value>)->Result<serde
  Ok(value)
 }
 struct WhatsAppProcess(Mutex<Option<Child>>);
+fn bridge_root(app:&tauri::AppHandle)->Result<PathBuf,String>{
+ Ok(app.path().resource_dir().map_err(|e|e.to_string())?.join("whatsapp-bridge"))
+}
 fn start_whatsapp_service(app:&tauri::AppHandle)->Result<Child,String>{
- let root=app.path().resource_dir().map_err(|e|e.to_string())?.join("whatsapp-bridge");
+ let root=bridge_root(app)?;
  let runtime=root.join("node.exe");
  let entry=root.join("server.mjs");
- if !runtime.exists()||!entry.exists(){return Err("Conector WhatsApp não incluído nesta instalação".into())}
+ if !runtime.is_file()||!entry.is_file(){return Err(format!("Conector não encontrado em {}",root.display()))}
+ let logdir=app.path().app_log_dir().map_err(|e|e.to_string())?;
+ fs::create_dir_all(&logdir).map_err(|e|e.to_string())?;
+ let logfile=fs::OpenOptions::new().create(true).append(true).open(logdir.join("whatsapp-bridge.log")).map_err(|e|e.to_string())?;
+ let errfile=logfile.try_clone().map_err(|e|e.to_string())?;
  Command::new(runtime).arg(entry).current_dir(&root)
   .env("PUPPETEER_CACHE_DIR",root.join("puppeteer-cache"))
-  .stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null())
+  .env("PEAK_WHATSAPP_LOG_DIR",&logdir)
+  .stdin(Stdio::null()).stdout(Stdio::from(logfile)).stderr(Stdio::from(errfile))
   .spawn().map_err(|e|format!("Não foi possível iniciar o WhatsApp: {e}"))
+}
+#[tauri::command]
+fn whatsapp_diagnostics(app:tauri::AppHandle)->Result<String,String>{
+ authenticated()?;
+ let root=bridge_root(&app)?;
+ let log=app.path().app_log_dir().map_err(|e|e.to_string())?.join("whatsapp-bridge.log");
+ let mut detail=format!("Pasta do conector: {}\\nnode.exe: {}\\nserver.mjs: {}\\n",root.display(),root.join("node.exe").exists(),root.join("server.mjs").exists());
+ if let Ok(mut file)=fs::File::open(&log){let mut data=String::new();let _=file.read_to_string(&mut data);let start=data.len().saturating_sub(5000);detail.push_str(&format!("Log: {}\\n{}",log.display(),String::from_utf8_lossy(&data.as_bytes()[start..])));}
+ else{detail.push_str(&format!("Log não encontrado: {}",log.display()));}
+ Ok(detail)
+}
+#[tauri::command]
+fn whatsapp_restart(app:tauri::AppHandle,state:tauri::State<WhatsAppProcess>)->Result<(),String>{
+ authenticated()?;
+ let mut guard=state.0.lock().map_err(|_|"Falha ao acessar processo".to_string())?;
+ if let Some(mut child)=guard.take(){let _=child.kill();let _=child.wait();}
+ *guard=Some(start_whatsapp_service(&app)?);
+ Ok(())
 }
 #[cfg_attr(mobile,tauri::mobile_entry_point)]
 pub fn run(){
@@ -238,6 +265,6 @@ pub fn run(){
    }
   }
  })
- .invoke_handler(tauri::generate_handler![operator_finance,login_operator,logout_operator,current_operator,list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update,open_whatsapp_web,whatsapp_bridge])
+ .invoke_handler(tauri::generate_handler![operator_finance,login_operator,logout_operator,current_operator,list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update,open_whatsapp_web,whatsapp_bridge,whatsapp_diagnostics,whatsapp_restart])
  .run(tauri::generate_context!()).expect("Erro ao iniciar PEAK Dashboard");
 }
