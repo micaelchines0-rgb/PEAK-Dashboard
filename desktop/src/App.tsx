@@ -12,15 +12,19 @@ const cmd=<T,>(name:string,args?:Record<string,unknown>)=>invoke<T>(name,args);
 type DashboardSettings={theme:'black'|'light';accent:string;dragonName:string;penguinName:string;rates:Record<string,number>;dragonSiglas:string;penguinSiglas:string;pixKey:string;pixHolder:string;pixMessage:string};
 const defaultSettings:DashboardSettings={theme:'black',accent:'#8558f3',dragonName:'Dragão',penguinName:'Pinguim',rates:{D5:5,D7:7,D9:9,D11:11,P6:6,P8:8},dragonSiglas:'XW, 888, DY, WE, DZ, OKOK, ANJO, AJ, ANJO/AJ, 777, A8, VOY, W1, 91, EK, WP, M9, RF',penguinSiglas:'MANGA, T1, BOI, MK, Y8, AM, AE, BRA, AA, SQ, M8, GAME, SE, 555',pixKey:'81995882238',pixHolder:'MICAEL RICARDO',pixMessage:'MARCAR E ENVIAR O COMPROVANTE'};
 const loadSettings=():DashboardSettings=>{try{const raw=localStorage.getItem('peak-v11-settings');if(!raw)return defaultSettings;const parsed=JSON.parse(raw);return {...defaultSettings,...parsed,rates:{...defaultSettings.rates,...parsed.rates}}}catch{return defaultSettings}};
+type Finance={shift_open:boolean;can_operate:boolean;current_blogger:number;current_company:number;pending_due:number};
 type OperatorSession={user_id:string;name:string;role:'admin'|'operator'};
 function App(){
  const [operator,setOperator]=useState<OperatorSession|null>(null);
+ const [finance,setFinance]=useState<Finance|null>(null);
+ const [financeError,setFinanceError]=useState('');
+ const refreshFinance=async()=>{try{setFinance(await cmd<Finance>('operator_finance'));setFinanceError('')}catch(e){setFinanceError(String(e));setFinance(null)}};
  const [loginUsername,setLoginEmail]=useState('');
  const [loginPassword,setLoginPassword]=useState('');
  const [loginBusy,setLoginBusy]=useState(false);
  const [loginError,setLoginError]=useState('');
  const doLogin=async(e:React.FormEvent)=>{e.preventDefault();setLoginBusy(true);setLoginError('');try{const user=await cmd<OperatorSession>('login_operator',{username:loginUsername,password:loginPassword});setOperator(user);setLoginPassword('');}catch(error){setLoginError(String(error))}finally{setLoginBusy(false)}};
- const doLogout=async()=>{await cmd('logout_operator');setOperator(null);setOrders([]);setNotes('');setForm(blank);setSelected(null)};
+ const doLogout=async()=>{await cmd('logout_operator');setOperator(null);setFinance(null);setOrders([]);setNotes('');setForm(blank);setSelected(null)};
 
  const[orders,setOrders]=useState<Order[]>([]),[form,setForm]=useState<Input>(blank),[selected,setSelected]=useState<number|null>(null);
  const[notes,setNotes]=useState(''),[search,setSearch]=useState(''),[message,setMessage]=useState(''),[generator,setGenerator]=useState(false);
@@ -90,6 +94,7 @@ function App(){
  const stopSplit=()=>{dragging.current=false};
  const resetSplit=()=>setSplitWidth(0);
  const refresh=async()=>{try{setOrders(await cmd<Order[]>('list_orders'))}catch(e){setMessage(String(e))}};
+ useEffect(()=>{if(!operator)return;void refreshFinance();const timer=setInterval(()=>void refreshFinance(),30000);return()=>clearInterval(timer)},[operator]);
  useEffect(()=>{if(operator){void refresh();cmd<string>('get_notes').then(setNotes).catch(e=>setMessage(String(e))) }},[operator]);
  useEffect(()=>{if(!operator)return;const timer=setTimeout(()=>cmd('set_notes',{text:notes}).catch(e=>setMessage(String(e))),700);return()=>clearTimeout(timer)},[notes,operator]);
  const totals=useMemo(()=>orders.reduce((a,o)=>({deposit:a.deposit+o.deposit,withdrawal:a.withdrawal+o.withdrawal,blogger:a.blogger+o.blogger}),{deposit:0,withdrawal:0,blogger:0}),[orders]);
@@ -102,9 +107,9 @@ function App(){
  const activeGroup=dragonSiglas.has(matchedSigla)?'D':penguinSiglas.has(matchedSigla)?'P':null;
  const updateSigla=(value:string)=>{const normalized=normalizeSigla(value);const group=dragonSiglas.has(normalized)?'D':penguinSiglas.has(normalized)?'P':null;setSigla(value);if(group)setPrices(previous=>Object.fromEntries(Object.entries(previous).map(([key,count])=>[key,key.startsWith(group)?count:0])))};
  const priceTotal=Object.entries(prices).reduce((a,[k,v])=>a+(settings.rates[k]??Number(k.slice(1)))*(v||0),0);
- const save=async(e:React.FormEvent)=>{e.preventDefault();try{await cmd('save_order',{input:form,id:selected});setForm(blank);setSelected(null);await refresh();setMessage('Operação salva com sucesso')}catch(e){setMessage(String(e))}};
+ const save=async(e:React.FormEvent)=>{e.preventDefault();try{await cmd('save_order',{input:form,id:selected});setForm(blank);setSelected(null);await refresh();await refreshFinance();setMessage('Operação salva com sucesso')}catch(e){setMessage(String(e))}};
  const edit=(o:Order)=>{setSelected(o.id);setForm({client:o.client,phone:o.phone,link:o.link,deposit:o.deposit,withdrawal:o.withdrawal,blogger:o.blogger});window.scrollTo({top:0,behavior:'smooth'})};
- const remove=async(id:number)=>{if(!confirm('Excluir esta operação?'))return;try{await cmd('delete_order',{id});await refresh()}catch(e){setMessage(String(e))}};
+ const remove=async(id:number)=>{if(!confirm('Excluir esta operação?'))return;try{await cmd('delete_order',{id});await refresh();await refreshFinance()}catch(e){setMessage(String(e))}};
  const closing=async()=>{if(!confirm('Exportar fechamento e limpar operações após salvar?'))return;try{const file=await cmd<string>('export_closing');await refresh();setMessage('Fechamento salvo: '+file)}catch(e){setMessage(String(e))}};
  const copyPix=async()=>{const text=`📌 PIX CELULAR\n💠 ${settings.pixKey}\n🏷️ ${settings.pixHolder}\n\n💸 ${currency(priceTotal)}\n⚠️ ${settings.pixMessage}\n\n⏱️ Prazo para conclusão: de 30 min a 1h após o envio do comprovante.`;try{await navigator.clipboard.writeText(text);setMessage('Comanda copiada')}catch{setMessage('Não foi possível copiar')}};
  const make=()=>{if(genCount<1||genCount>500||genMin<0||genMax<genMin){setMessage('Confira os valores do gerador');return}setGenerated(Array.from({length:genCount},()=>Math.floor(Math.random()*(genMax-genMin+1))+genMin))};
@@ -130,7 +135,15 @@ function App(){
   <button className="nav" onClick={()=>setSettingsOpen(true)}><Settings2 size={18}/> Configurações</button>\n  <div className="sidebar-bottom"><span className="status-dot"/> Banco de dados local <small>Versão 11.0.1</small></div>
  </aside>
  <main className="main">
-  <header className="topbar"><button className="icon-btn" title="Menu" onClick={()=>setSidebar(!sidebar)}><Menu size={19}/></button><div><div className="eyebrow">CENTRAL DE OPERAÇÕES</div><h1>Visão geral <span className="title-dot">.</span></h1></div><div className="top-actions"><button className="btn ghost" onClick={()=>void doLogout()} title="Encerrar sessão">Sair · {operator.name}</button><span className="online"><span className="status-dot"/> Sistema local</span><button className="btn ghost" onClick={refresh}><RefreshCw size={16}/> Atualizar dados</button><button className="btn ghost" onClick={()=>checkUpdates(true)}><Download size={16}/> Verificar versão</button><button className="btn primary" onClick={closing}><FileSpreadsheet size={16}/> Fechamento diário</button></div></header>
+  <header className="topbar"><button className="icon-btn" title="Menu" onClick={()=>setSidebar(!sidebar)}><Menu size={19}/></button><div><div className="eyebrow">CENTRAL DE OPERAÇÕES</div><h1>Visão geral <span className="title-dot">.</span></h1></div><div className="top-actions"><button className="btn ghost" onClick={()=>void doLogout()} title="Encerrar sessão">Sair · {operator.name}</button><span className="online"><span className="status-dot"/> Sistema local</span><button className="btn ghost" onClick={refresh}><RefreshCw size={16}/> Atualizar dados</button><button className="btn ghost" onClick={()=>checkUpdates(true)}><Download size={16}/> Verificar versão</button><button className="btn primary" onClick={closing}><FileSpreadsheet size={16}/> Exportar fechamento local</button></div></header>
+  <section className="card section" style={{margin:'12px 18px',padding:'14px 18px',borderLeft:'4px solid #4285ff'}}>
+   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:16,flexWrap:'wrap'}}>
+    <div><div className="eyebrow">COMISSÃO PEAK · FINANCEIRO</div><strong style={{fontSize:20}}>{finance?currency(finance.pending_due>0?finance.pending_due:finance.current_company):'Consultando...'}</strong><div style={{opacity:.72,fontSize:12}}>{finance?.pending_due>0?'Valor pendente de pagamento':'Comissão acumulada no expediente atual'}</div></div>
+    <div><strong style={{color:finance&&!finance.can_operate?'#ff7474':'#75dca5'}}>{finance?(finance.can_operate?'Expediente liberado':'Aguardando baixa do administrador'):'Verificando...'}</strong><div style={{opacity:.72,fontSize:12}}>Parte das blogueiras no expediente: {finance?currency(finance.current_blogger):'—'}</div></div>
+    <button className="btn ghost" onClick={()=>void refreshFinance()}><RefreshCw size={15}/> Atualizar comissão</button>
+   </div>
+   {financeError&&<div style={{color:'#ff7474',fontSize:12,marginTop:8}}>{financeError}</div>}
+  </section>
   <div className="columns" ref={splitRef} style={splitWidth?{gridTemplateColumns:"minmax(280px, "+splitWidth+"px) 12px minmax(420px, 1fr)"}:undefined}>
    <div className="left-col">
     <section className="card section notes-card"><div className="section-head"><div><span className="eyebrow">ANOTAÇÕES</span><h3>Bloco de notas</h3></div><button className="text-btn" onClick={()=>setNotes('')}>Limpar</button></div><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Suas anotações ficam salvas automaticamente..."/><small>↘ Arraste o canto inferior direito para redimensionar</small></section>
