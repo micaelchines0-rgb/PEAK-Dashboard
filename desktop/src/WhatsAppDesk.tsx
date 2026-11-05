@@ -22,7 +22,10 @@ export default function WhatsAppDesk(){
  const [showServer,setShowServer]=useState(false);
  const known=useRef<Set<string>>(new Set());
  const loaded=useRef(false);
+ const refreshing=useRef(false);
  const refresh=useCallback(async()=>{
+  if(refreshing.current)return;
+  refreshing.current=true;
   try{
    const status=await api<Status>('status');setConnection(status);setError('');
    if(status.status==='ready'&&status.groupId){
@@ -31,10 +34,10 @@ export default function WhatsAppDesk(){
     known.current=new Set(result.orders.map(o=>o.id));loaded.current=true;
     setMessages(result.messages);setOrders(result.orders);
    }else{setMessages([]);setOrders([]);loaded.current=false}
-  }catch(e){setConnection(null);setError(String(e))}
+  }catch(e){setConnection(null);setError(String(e))}finally{refreshing.current=false}
  },[sound]);
  useEffect(()=>{void invoke<{configured:boolean;host?:string;port?:number}>('whatsapp_server_settings').then(setServer).catch(()=>{});},[]);
- useEffect(()=>{void refresh();const timer=setInterval(()=>void refresh(),2500);return()=>clearInterval(timer)},[refresh]);
+ useEffect(()=>{void refresh();const timer=setInterval(()=>{if(!document.hidden)void refresh()},5000);return()=>clearInterval(timer)},[refresh]);
  async function action(route:string,payload:Record<string,unknown>){setBusy(true);try{await api(route,payload);setError('');await refresh()}catch(e){setError(String(e))}finally{setBusy(false)}}
  const pending=orders.filter(o=>o.status==='pending');
  const doing=orders.filter(o=>o.status==='doing');
