@@ -1,5 +1,5 @@
-import WhatsAppChat from './WhatsAppChat';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import WhatsAppChat, {type Message as WhatsAppMessage} from './WhatsAppChat';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {invoke} from '@tauri-apps/api/core';
 import {Activity,ArrowDownToLine,ArrowUpFromLine,Check,ClipboardCopy,Database,Download,FileSpreadsheet,Menu,Plus,RefreshCw,Save,Search,Settings2,Shuffle,Trash2,Wallet,X} from 'lucide-react';
 
@@ -16,6 +16,8 @@ const loadSettings=():DashboardSettings=>{try{const raw=localStorage.getItem('pe
 type Finance={shift_open:boolean;can_operate:boolean;current_blogger:number;current_company:number;pending_due:number};
 type OperatorSession={user_id:string;name:string;role:'admin'|'operator'};
 function App(){
+ const [pendingWhatsApp,setPendingWhatsApp]=useState<WhatsAppMessage[]>([]);
+ const addWhatsAppOrder=useCallback((m:WhatsAppMessage)=>setPendingWhatsApp(prev=>prev.some(p=>p.id===m.id&&p.groupId===m.groupId)?prev:[m,...prev]),[]);
  const [operator,setOperator]=useState<OperatorSession|null>(null);
  const [finance,setFinance]=useState<Finance|null>(null);
  const [financeError,setFinanceError]=useState('');
@@ -137,7 +139,7 @@ function App(){
  </aside>
  <main className="main">
   <header className="topbar"><button className="icon-btn" title="Menu" onClick={()=>setSidebar(!sidebar)}><Menu size={19}/></button><div><div className="eyebrow">CENTRAL DE OPERAÇÕES</div><h1>Visão geral <span className="title-dot">.</span></h1></div><div className="top-actions"><div title={financeError||'Comissão PEAK do expediente'} style={{display:'flex',flexDirection:'column',justifyContent:'center',flex:'0 0 auto',padding:'5px 11px',border:'1px solid #2b3b58',borderLeft:'3px solid '+(finance&&!finance.can_operate?'#ff7474':'#4285ff'),borderRadius:9,background:'#151622',minWidth:125,maxWidth:160,minHeight:38}}><span style={{fontSize:9,letterSpacing:'.06em',opacity:.76,whiteSpace:'nowrap'}}>COMISSÃO PEAK</span><strong style={{fontSize:15,lineHeight:1.3,color:finance&&!finance.can_operate?'#ff9292':'#f3f5ff',whiteSpace:'nowrap'}}>{finance?currency((finance.pending_due??0)>0?finance.pending_due:finance.current_company):'—'}</strong></div><button className="btn ghost" onClick={()=>void doLogout()} title="Encerrar sessão">Sair · {operator.name}</button><span className="online"><span className="status-dot"/> Sistema local</span><button className="btn ghost" onClick={refresh}><RefreshCw size={16}/> Atualizar dados</button><button className="btn ghost" onClick={()=>checkUpdates(true)}><Download size={16}/> Verificar versão</button><button className="btn primary" onClick={closing}><FileSpreadsheet size={16}/> Exportar fechamento local</button></div></header>
-  <div className="columns" ref={splitRef} style={splitWidth?{gridTemplateColumns:"minmax(280px, "+splitWidth+"px) 12px minmax(420px, 1fr)"}:undefined}>
+  <div className="columns" ref={splitRef} style={{gridTemplateColumns:splitWidth?`minmax(280px, ${splitWidth}px) 12px minmax(420px, 1fr) minmax(290px, 360px)`:"minmax(280px, 320px) 12px minmax(420px, 1fr) minmax(290px, 360px)"}}>
    <div className="left-col">
     <section className="card section notes-card"><div className="section-head"><div><span className="eyebrow">ANOTAÇÕES</span><h3>Bloco de notas</h3></div><button className="text-btn" onClick={()=>setNotes('')}>Limpar</button></div><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Suas anotações ficam salvas automaticamente..."/><small>↘ Arraste o canto inferior direito para redimensionar</small></section>
     <section className="card section"><div className="section-head"><div><span className="eyebrow">FERRAMENTAS</span><h3>Calculadora rápida</h3></div><button type="button" className="text-btn" onClick={()=>{pendingCalcFocus.current=null;setCalc([['',''],['','']]);Object.values(calcRefs.current).forEach(input=>input?.blur())}}>Limpar</button></div><div className="calc-grid">{['Depósitos','Saques'].map((label,column)=><div className="calc-column" key={label}><label>{label}</label><div className="calc-scroll">{calc[column].map((value,index)=><input key={column+':'+index} ref={element=>{calcRefs.current[column+':'+index]=element}} placeholder="0,00" inputMode="decimal" value={value} onChange={e=>updateCalc(column,index,e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();nextCalc(column,index)}}}/>)}</div><strong>{currency(calc[column].reduce((sum,value)=>sum+number(value),0))}</strong></div>)}</div></section>
@@ -155,7 +157,14 @@ function App(){
    </div>
    <div className="column-resizer" role="separator" title="Arraste para ajustar a largura. Clique duas vezes para restaurar." onPointerDown={startSplit} onPointerMove={moveSplit} onPointerUp={stopSplit} onLostPointerCapture={stopSplit} onDoubleClick={resetSplit}><span/></div>
    <div className="right-col">
-   <WhatsAppChat operatorId={operator.user_id}/>
+  <section className="card section" style={{marginBottom:12}}>
+   <div className="section-head"><div><span className="eyebrow">ATENDIMENTO</span><h3>Pedidos Pendentes <small>{pendingWhatsApp.length}</small></h3></div><button className="text-btn" onClick={()=>setPendingWhatsApp([])}>Limpar</button></div>
+   {pendingWhatsApp.length===0?<p style={{opacity:.65}}>Nenhum pedido novo.</p>:pendingWhatsApp.map(m=><div key={m.groupId+':'+m.id} style={{borderLeft:'3px solid #13b8ef',background:'#151622',borderRadius:8,padding:12,marginTop:8}}>
+    <div style={{display:'flex',justifyContent:'space-between',gap:8}}><strong>{m.sender||'Participante'} <small style={{opacity:.7}}>{m.phone||''}</small></strong><button className="text-btn" onClick={()=>setPendingWhatsApp(p=>p.filter(x=>x.id!==m.id||x.groupId!==m.groupId))}>Concluir</button></div>
+    <div style={{whiteSpace:'pre-wrap',marginTop:8}}>{m.text}</div>
+    <div style={{marginTop:9,display:'flex',gap:8}}><button className="btn ghost" onClick={()=>{setForm(prev=>({...prev,client:m.sender||'',phone:m.phone||'',link:(m.text.match(/https?:\/\/[^\s]+/i)||[])[0]||''}));setMessage('Pedido preenchido no formulário de nova operação')}}>Criar registro</button><button className="btn ghost" onClick={()=>navigator.clipboard.writeText(m.text).then(()=>setMessage('Pedido copiado'))}>Copiar pedido</button></div>
+   </div>)}
+  </section>
   <section className="card section commands-top"><div className="section-head"><div><span className="eyebrow">COMANDAS</span><h3>{settings.dragonName} & {settings.penguinName}</h3></div></div>
    <div className="commands-layout">
     <div className="price-group"><h4 className="green">🐉 {settings.dragonName}</h4><div className="price-inputs">{['D5','D7','D9','D11'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} disabled={activeGroup!==null&&activeGroup!==t.charAt(0)} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
@@ -169,6 +178,7 @@ function App(){
   </section>
     <section className="card section records"><div className="section-head"><div><span className="eyebrow">HISTÓRICO</span><h3>Pedidos registrados <span className="count">{orders.length}</span></h3></div><div className="search"><Search size={16}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar cliente..."/></div></div><div className="table-wrap"><table><thead><tr><th>Cliente</th><th>Link</th><th>Depósito</th><th>Saque</th><th>Blogueira</th><th>Lucro</th><th></th></tr></thead><tbody>{filtered.map(o=><tr key={o.id}><td><strong>{o.client}</strong><small>{o.phone}</small></td><td className="link-cell">{o.link}</td><td>{currency(o.deposit)}</td><td>{currency(o.withdrawal)}</td><td>{currency(o.blogger)}</td><td className={o.withdrawal+o.blogger-o.deposit>=0?'green':'red'}>{currency(o.withdrawal+o.blogger-o.deposit)}</td><td><div className="row-actions"><button title="Editar" onClick={()=>edit(o)}><Settings2 size={15}/></button><button title="Excluir" onClick={()=>remove(o.id)}><Trash2 size={15}/></button></div></td></tr>)}{!filtered.length&&<tr><td colSpan={7} className="empty">Nenhuma operação encontrada.</td></tr>}</tbody></table></div></section>
    </div>
+   <div style={{minWidth:0,alignSelf:'start',position:'sticky',top:8}}><WhatsAppChat operatorId={operator.user_id} onOrder={addWhatsAppOrder}/></div>
   </div>
   {message&&<div className="toast" role="status"><span>{message}</span><button onClick={()=>setMessage('')}><X size={15}/></button></div>}
   {showUpdate&&<div className="overlay" onClick={()=>!updateBusy&&setShowUpdate(false)}><div className="modal card update-modal" role="dialog" aria-modal="true" aria-label="Atualização da PEAK Dashboard" onClick={e=>e.stopPropagation()}>
