@@ -16,3 +16,9 @@
 .wa-pending{grid-row:1}.wa-doing{grid-row:2}.wa-simulator{top:100px;left:15px;right:auto;width:min(380px,calc(100% - 30px))}
 .shell .main{padding-right:initial!important}.shell .main .columns{grid-template-columns:revert!important}.shell .main .column-resizer{display:revert!important}
 @media(max-width:1000px){.wa-desk{height:auto!important;min-height:750px}.wa-columns{grid-template-columns:1fr!important}.wa-chat{grid-column:1;grid-row:1;min-height:320px!important}.wa-operations{grid-column:1;grid-row:2;min-height:440px}}
+
+/* V11.2.5: correção solicitada — chat na DIREITA, pedidos no CENTRO */
+.wa-columns{grid-template-columns:minmax(380px,1fr) minmax(270px,36%)!important}
+.wa-chat{grid-column:2!important;grid-row:1!important}
+.wa-operations{grid-column:1!important;grid-row:1!important}
+@media(max-width:1000px){.wa-columns{grid-template-columns:1fr!important}.wa-operations{grid-column:1!important;grid-row:1!important}.wa-chat{grid-column:1!important;grid-row:2!important}}
