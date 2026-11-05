@@ -225,7 +225,11 @@ fn whatsapp_remove_server()->Result<(),String>{
  Ok(())
 }
 #[tauri::command]
-fn whatsapp_bridge(route:String,payload:Option<serde_json::Value>)->Result<serde_json::Value,String>{
+async fn whatsapp_bridge(route:String,payload:Option<serde_json::Value>)->Result<serde_json::Value,String>{
+ tauri::async_runtime::spawn_blocking(move || whatsapp_bridge_blocking(route,payload))
+  .await.map_err(|_|"Falha ao consultar servidor WhatsApp".to_string())?
+}
+fn whatsapp_bridge_blocking(route:String,payload:Option<serde_json::Value>)->Result<serde_json::Value,String>{
  authenticated()?;
  let allowed=["status","groups","select","messages","send","order"];
  if !allowed.contains(&route.as_str()){return Err("Ação inválida".into())}
