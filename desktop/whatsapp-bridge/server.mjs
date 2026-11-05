@@ -21,7 +21,19 @@ const classify=body=>{
  const quantity=m?Number(m[1]||m[2]):null;
  return {quantity,order:quantity!==null||/(?:https?:\/\/|www\.)\S+/i.test(body)};
 };
-const client=new Client({authStrategy:new LocalAuth({clientId:'peak-operator',dataPath:path.join(base,'session')}),puppeteer:{headless:true,args:['--no-first-run','--no-default-browser-check']}});
+const chromeRoot=path.join(import.meta.dirname||path.dirname(new URL(import.meta.url).pathname),'puppeteer-cache','chrome');
+function locateChrome(dir,depth=0){
+ if(depth>5||!fs.existsSync(dir))return '';
+ for(const item of fs.readdirSync(dir,{withFileTypes:true})){
+  const full=path.join(dir,item.name);
+  if(item.isFile()&&item.name==='chrome.exe')return full;
+  if(item.isDirectory()){const found=locateChrome(full,depth+1);if(found)return found}
+ }
+ return '';
+}
+const executablePath=locateChrome(chromeRoot);
+console.log('PEAK bridge startup; Chromium:',executablePath||'Puppeteer default');
+const client=new Client({authStrategy:new LocalAuth({clientId:'peak-operator',dataPath:path.join(base,'session')}),puppeteer:{headless:true,...(executablePath?{executablePath}:{}),args:['--no-first-run','--no-default-browser-check']}});
 client.on('qr',async value=>{status='qr';qr=await QRCode.toDataURL(value);});
 client.on('authenticated',()=>{status='authenticated';qr='';});
 client.on('ready',async()=>{status='ready';qr='';phone=client.info?.wid?.user||'';await loadGroups();});
