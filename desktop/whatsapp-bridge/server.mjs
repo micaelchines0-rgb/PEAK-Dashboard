@@ -75,27 +75,33 @@ function refreshGroups(){
 }
 function captureMessage(m){
  try{
-  if(typeof m.from!=='string'||!m.from.endsWith('@g.us'))return;
-  if(!groups.some(g=>g.id===m.from)){
-   const name='Grupo '+m.from.split('@')[0];
-   groups=[...groups,{id:m.from,name}];saved.knownGroups=groups;save();
+  const outgoing=Boolean(m.fromMe);
+  const chatId=outgoing?m.to:m.from;
+  if(typeof chatId!=='string'||!chatId.endsWith('@g.us'))return;
+  if(!groups.some(g=>g.id===chatId)){
+   const name='Grupo '+chatId.split('@')[0];
+   groups=[...groups,{id:chatId,name}];saved.knownGroups=groups;save();
    console.log('Grupo detectado por mensagem:',name);
   }
-  if(!saved.groupId||m.from!==saved.groupId)return;
+  if(!saved.groupId||chatId!==saved.groupId)return;
   const id=m.id?._serialized||m.id?.id;
   if(!id||messages.some(x=>x.id===id))return;
   const body=typeof m.body==='string'?m.body:'';
-  const result=classify(body);
-  const item={id,chatId:m.from,sender:m._data?.notifyName||m.author||'Participante',phone:(m.author||m.from).split('@')[0],body,at:new Date((m.timestamp||Date.now()/1000)*1000).toISOString(),...result};
+  // Respostas dos operadores não são pedidos novos.
+  const result=outgoing?{order:false}:classify(body);
+  const sender=outgoing?'Você':(m._data?.notifyName||m.author||'Participante');
+  const senderPhone=outgoing?(phone||m.from||'').split('@')[0]:(m.author||m.from).split('@')[0];
+  const item={id,chatId,sender,phone:senderPhone,body,at:new Date((m.timestamp||Date.now()/1000)*1000).toISOString(),fromMe:outgoing,...result};
   messages=[...messages,item].slice(-300);
   if(result.order&&!saved.orders[id]){saved.orders[id]={status:'pending',...item};save();}
-  console.log('Mensagem recebida no grupo:',id);
-  // Buscar contato em segundo plano: nunca bloquear o recebimento de mensagens.
-  void Promise.resolve().then(()=>m.getContact()).then(contact=>{
-   const name=contact?.pushname||contact?.name;
-   if(name){item.sender=name;const order=saved.orders[id];if(order){order.sender=name;save();}}
-  }).catch(e=>console.warn('Contato indisponível:',String(e?.message||e)));
- }catch(e){console.error('Erro ao receber mensagem:',e?.stack||e)}
+  console.log(outgoing?'Mensagem enviada no grupo:':'Mensagem recebida no grupo:',id);
+  if(!outgoing){
+   void Promise.resolve().then(()=>m.getContact()).then(contact=>{
+    const name=contact?.pushname||contact?.name;
+    if(name){item.sender=name;const order=saved.orders[id];if(order){order.sender=name;save();}}
+   }).catch(e=>console.warn('Contato indisponível:',String(e?.message||e)));
+  }
+ }catch(e){console.error('Erro ao processar mensagem:',e?.stack||e)}
 }
 client.on('message',captureMessage);
 client.on('message_create',m=>{if(m.fromMe)captureMessage(m)});
