@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use tauri::Manager;
 use std::sync::Mutex;
+use std::process::{Child,Command,Stdio};
 
 const SUPABASE_URL: &str = "https://pnigecdjotqaxktnmnkj.supabase.co";
 const SUPABASE_PUBLIC_KEY: &str = "sb_publishable_hvV4gGkZMfFCFD8ZrrTkAg_vPN1n31b";
@@ -210,9 +211,33 @@ fn whatsapp_bridge(route:String,payload:Option<serde_json::Value>)->Result<serde
  if !status.is_success(){return Err(value.get("error").and_then(|x|x.as_str()).unwrap_or("Erro no conector").to_string())}
  Ok(value)
 }
+struct WhatsAppProcess(Mutex<Option<Child>>);
+fn start_whatsapp_service(app:&tauri::AppHandle)->Result<Child,String>{
+ let root=app.path().resource_dir().map_err(|e|e.to_string())?.join("whatsapp-bridge");
+ let runtime=root.join("node.exe");
+ let entry=root.join("server.mjs");
+ if !runtime.exists()||!entry.exists(){return Err("Conector WhatsApp não incluído nesta instalação".into())}
+ Command::new(runtime).arg(entry).current_dir(&root)
+  .env("PUPPETEER_CACHE_DIR",root.join("puppeteer-cache"))
+  .stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null())
+  .spawn().map_err(|e|format!("Não foi possível iniciar o WhatsApp: {e}"))
+}
 #[cfg_attr(mobile,tauri::mobile_entry_point)]
 pub fn run(){
  tauri::Builder::default()
+ .manage(WhatsAppProcess(Mutex::new(None)))
+ .setup(|app|{
+  let child=start_whatsapp_service(app.handle());
+  match child{Ok(process)=>{if let Ok(mut guard)=app.state::<WhatsAppProcess>().0.lock(){*guard=Some(process)}},Err(error)=>eprintln!("{error}")}
+  Ok(())
+ })
+ .on_window_event(|window,event|{
+  if let tauri::WindowEvent::Destroyed=event{
+   if window.app_handle().webview_windows().len()<=1{
+    if let Ok(mut guard)=window.state::<WhatsAppProcess>().0.lock(){if let Some(mut child)=guard.take(){let _=child.kill();let _=child.wait();}}
+   }
+  }
+ })
  .invoke_handler(tauri::generate_handler![operator_finance,login_operator,logout_operator,current_operator,list_orders,save_order,delete_order,get_notes,set_notes,open_data_folder,export_closing,updates::check_for_updates,updates::download_and_install_update,open_whatsapp_web,whatsapp_bridge])
  .run(tauri::generate_context!()).expect("Erro ao iniciar PEAK Dashboard");
 }
