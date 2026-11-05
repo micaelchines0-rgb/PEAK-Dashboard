@@ -115,7 +115,7 @@ function App(){
   <div className="eyebrow">IDENTIFICAÇÃO OBRIGATÓRIA</div><h2 style={{margin:'10px 0 6px'}}>Entrar na operação</h2>
   <p style={{opacity:.7,marginBottom:22}}>Entre com seu usuário autorizado para registrar serviços.</p>
   <form onSubmit={doLogin} className="form-grid" style={{display:'grid',gridTemplateColumns:'1fr'}}>
-   <label>Usuário<input type="text" autoComplete="username" required value={loginUsername} onChange={e=>setLoginEmail(e.target.value)} placeholder="Digite seu usuário"/></label>
+   <label>Usuário<input type="text" autoComplete="username" required value={loginUsername} onChange={e=>setLoginUsername(e.target.value)} placeholder="Digite seu usuário"/></label>
    <label>Senha<input type="password" autoComplete="current-password" required value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} placeholder="Sua senha"/></label>
    {loginError&&<p role="alert" style={{color:'#ff7777',overflowWrap:'anywhere'}}>{loginError}</p>}
    <button className="btn primary submit" type="submit" disabled={loginBusy}>{loginBusy?'Validando acesso...':'Entrar na PEAK Dashboard'}</button>
