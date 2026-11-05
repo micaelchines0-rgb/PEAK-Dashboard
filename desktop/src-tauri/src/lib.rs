@@ -237,7 +237,7 @@ fn whatsapp_diagnostics(app:tauri::AppHandle)->Result<String,String>{
  let root=bridge_root(&app)?;
  let log=app.path().app_log_dir().map_err(|e|e.to_string())?.join("whatsapp-bridge.log");
  let mut detail=format!("Pasta do conector: {}\\nnode.exe: {}\\nserver.mjs: {}\\n",root.display(),root.join("node.exe").exists(),root.join("server.mjs").exists());
- if let Ok(mut file)=fs::File::open(&log){let mut data=String::new();let _=file.read_to_string(&mut data);let start=data.len().saturating_sub(5000);detail.push_str(&format!("Log: {}\\n{}",log.display(),String::from_utf8_lossy(&data.as_bytes()[start..])));}
+ if let Ok(mut file)=fs::File::open(&log){let mut data=String::new();let _=file.read_to_string(&mut data);let start=data.char_indices().map(|(i,_)|i).filter(|i|*i<=data.len().saturating_sub(5000)).last().unwrap_or(0);detail.push_str(&format!("Log: {}\\n{}",log.display(),&data[start..]));}
  else{detail.push_str(&format!("Log não encontrado: {}",log.display()));}
  Ok(detail)
 }
