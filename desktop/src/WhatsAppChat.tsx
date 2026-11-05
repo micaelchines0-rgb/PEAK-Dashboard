@@ -2,17 +2,22 @@ import {useEffect,useState} from 'react';
 type Message={id:string;groupId:string;sender:string;phone?:string;text:string;timestamp:number;fromMe:boolean};
 type Group={id:string;name:string};
 const gateway=(import.meta.env.VITE_PEAK_WHATSAPP_GATEWAY_URL||'').replace(/\/$/,'');
-export default function WhatsAppChat(){
+export default function WhatsAppChat({operatorId}:{operatorId:string}){
  const [groups,setGroups]=useState<Group[]>([]),[group,setGroup]=useState(''),[messages,setMessages]=useState<Message[]>([]),[draft,setDraft]=useState(''),[status,setStatus]=useState('desconectado'),[qr,setQr]=useState(''),[error,setError]=useState('');
  const openedAt=useState(()=>Date.now())[0];
+ const [connecting,setConnecting]=useState(false);
+ const session= gateway+'/operators/'+encodeURIComponent(operatorId);
+ const connect=async()=>{setConnecting(true);setError('');try{const r=await fetch(session+'/connect',{method:'POST'});if(!r.ok)throw Error('Não foi possível iniciar a conexão');const data=await r.json();setQr(data.qr||'');setStatus(data.status||'aguardando QR Code')}catch(e){setError(String(e))}finally{setConnecting(false)}};
  const [sending,setSending]=useState(false);
  useEffect(()=>{if(!group&&groups.length)setGroup(groups[0].id)},[groups,group]);
- useEffect(()=>{if(!gateway)return;let live=true;const refresh=async()=>{try{const r=await fetch(gateway+'/status');if(!r.ok)throw Error('Servidor indisponível');const data=await r.json();if(live){setStatus(data.status||'desconectado');setQr(data.qr||'');setGroups(data.groups||[]);setError('')}}catch(e){if(live)setError(String(e))}};void refresh();const timer=setInterval(refresh,5000);return()=>{live=false;clearInterval(timer)}},[]);
- useEffect(()=>{if(!gateway||!group)return;let live=true;const refresh=async()=>{try{const r=await fetch(gateway+'/groups/'+encodeURIComponent(group)+'/messages');if(!r.ok)throw Error('Falha ao carregar mensagens');const data=await r.json();if(live)setMessages((data.messages||[]).filter((m:Message)=>m.timestamp>=openedAt))}catch(e){if(live)setError(String(e))}};void refresh();const timer=setInterval(refresh,3000);return()=>{live=false;clearInterval(timer)}},[group]);
- const send=async()=>{if(!draft.trim()||!group||sending)return;setSending(true);try{const r=await fetch(gateway+'/groups/'+encodeURIComponent(group)+'/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:draft.trim()})});if(!r.ok)throw Error('Não foi possível enviar');setDraft('');setError('')}catch(e){setError(String(e))}finally{setSending(false)}};
+ useEffect(()=>{if(!gateway||!operatorId)return;let live=true;const refresh=async()=>{try{const r=await fetch(session+'/status');if(!r.ok)throw Error('Servidor indisponível');const data=await r.json();if(live){setStatus(data.status||'desconectado');setQr(data.qr||'');setGroups(data.groups||[]);setError('')}}catch(e){if(live)setError(String(e))}};void refresh();const timer=setInterval(refresh,5000);return()=>{live=false;clearInterval(timer)}},[operatorId]);
+ useEffect(()=>{if(!gateway||!group||!operatorId)return;let live=true;const refresh=async()=>{try{const r=await fetch(session+'/groups/'+encodeURIComponent(group)+'/messages');if(!r.ok)throw Error('Falha ao carregar mensagens');const data=await r.json();if(live)setMessages((data.messages||[]).filter((m:Message)=>m.timestamp>=openedAt))}catch(e){if(live)setError(String(e))}};void refresh();const timer=setInterval(refresh,3000);return()=>{live=false;clearInterval(timer)}},[group,operatorId]);
+ const send=async()=>{if(!draft.trim()||!group||sending)return;setSending(true);try{const r=await fetch(session+'/groups/'+encodeURIComponent(group)+'/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:draft.trim()})});if(!r.ok)throw Error('Não foi possível enviar');setDraft('');setError('')}catch(e){setError(String(e))}finally{setSending(false)}};
  return <section className="card section" style={{padding:12,minHeight:330,display:'flex',flexDirection:'column',gap:8}}>
  <div className="section-head"><div><span className="eyebrow">GRUPO WHATSAPP</span><h3 style={{fontSize:16}}>Mensagens recebidas</h3></div><small>{status}</small></div>
- {!gateway?<small>Servidor WhatsApp ainda não configurado.</small>:null}
+ {!gateway?<small>Servidor WhatsApp ainda não configurado. O QR Code ficará disponível após a instalação da ponte local.</small>:null}
+ {gateway&&status!=='conectado'?<button className="btn primary" disabled={connecting} onClick={()=>void connect()}>{connecting?'Conectando...':'Conectar meu WhatsApp'}</button>:null}
+ {qr&&qr.startsWith('data:image/png;base64,')?<div style={{background:'#fff',padding:10,alignSelf:'center'}}><img src={qr} alt="QR Code para vincular seu WhatsApp" width={200} height={200}/><small style={{display:'block',color:'#111'}}>WhatsApp → Aparelhos conectados → Conectar aparelho</small></div>:null}
  {error?<small role="alert" style={{color:'#ff9292'}}>{error}</small>:null}
  {groups.length>1?<select aria-label="Grupo WhatsApp" value={group} onChange={e=>setGroup(e.target.value)}>{groups.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select>:<small>{groups.find(g=>g.id===group)?.name||'Aguardando grupo conectado'}</small>}
  <div style={{flex:1,minHeight:200,maxHeight:330,overflowY:'auto',display:'flex',flexDirection:'column',gap:8}}>
