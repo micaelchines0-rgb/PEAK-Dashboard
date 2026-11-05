@@ -134,3 +134,5 @@ html{min-width:0}body{overflow-x:hidden}button,input,select{max-width:100%}.shel
  .metric b{font-size:15px}
  .block{padding:10px}
 }
+
+.danger-outline{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#311a25;color:#ff9eaa;border:1px solid #7a3448;border-radius:8px;padding:8px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}.danger-outline:hover:not(:disabled){background:#502032;border-color:#e05b78;color:#fff}.danger-outline:focus-visible{outline:2px solid #ff8095;outline-offset:2px}.danger-outline:disabled{opacity:.45;cursor:not-allowed}@media(max-width:700px){.danger-outline{padding:8px 9px;font-size:11px}}
