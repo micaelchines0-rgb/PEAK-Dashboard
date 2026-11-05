@@ -144,3 +144,12 @@
 .wa-order-choice{display:flex;align-items:center;background:#1b1d28;border-radius:6px;padding:2px 5px;gap:6px}
 .wa-order-actions .wa-order-icon-btn{font-size:14px;color:#a8b6cf;padding:3px 4px}
 .wa-order-actions .wa-order-reply-price{margin-left:auto;background:#1c1e28;color:#39b8c9;padding:8px 10px;font-weight:600}
+
+.wa-order-editor{display:grid;gap:8px;padding:10px;background:#1b1d29;border:1px solid #3b4055;border-radius:8px}
+.wa-order-editor label{font-size:11px!important;margin:0!important}
+.wa-order-editor select,.wa-order-editor textarea,.wa-order-editor input{box-sizing:border-box;width:100%;margin-top:3px;padding:6px;border:1px solid #41485d;border-radius:5px;background:#11141e;color:#f3f4f8;font-size:11px}
+.wa-edit-rows{display:grid;gap:5px}
+.wa-edit-rows>div{display:grid;grid-template-columns:minmax(90px,1fr) 65px 90px;align-items:center;gap:6px;font-size:11px}
+.wa-edit-buttons{display:flex;gap:8px}
+.wa-edit-buttons button{border:1px solid #525a70;border-radius:6px;padding:7px 10px;background:#262b3d;color:white;cursor:pointer}
+.wa-order-choice button.selected{background:#364c68;color:#fff}
