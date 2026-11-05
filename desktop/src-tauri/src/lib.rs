@@ -214,7 +214,18 @@ fn whatsapp_bridge(route:String,payload:Option<serde_json::Value>)->Result<serde
 }
 struct WhatsAppProcess(Mutex<Option<Child>>);
 fn bridge_root(app:&tauri::AppHandle)->Result<PathBuf,String>{
- Ok(app.path().resource_dir().map_err(|e|e.to_string())?.join("whatsapp-bridge"))
+ let resource=app.path().resource_dir().map_err(|e|e.to_string())?;
+ // Windows Tauri paths can use the extended-length prefix \\?\\.
+ // Node's main-module resolver does not reliably accept that prefix.
+ #[cfg(windows)]
+ let resource={
+  let raw=resource.to_string_lossy();
+  match raw.strip_prefix(r"\\?\\") {
+   Some(stripped)=>PathBuf::from(stripped),
+   None=>resource,
+  }
+ };
+ Ok(resource.join("whatsapp-bridge"))
 }
 fn start_whatsapp_service(app:&tauri::AppHandle)->Result<Child,String>{
  let root=bridge_root(app)?;
