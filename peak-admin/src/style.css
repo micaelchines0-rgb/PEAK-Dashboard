@@ -69,3 +69,68 @@ html{min-width:0}body{overflow-x:hidden}button,input,select{max-width:100%}.shel
  .chart-summary{grid-template-columns:minmax(0,1fr)}
  .chart-summary>div:last-child{grid-column:auto}
 }
+
+/* Compact phone refinement: prioritize information density without zooming */
+@media(max-width:700px){
+ body{font-size:12px}
+ .shell>aside{padding:6px 8px;gap:3px;min-height:48px}
+ .shell>aside .brand{margin-right:2px}
+ .shell>aside .brand .mark{width:29px;height:29px;border-radius:8px}
+ .shell>aside .brand .mark svg{width:17px;height:17px}
+ .shell>aside .nav{padding:7px 8px;min-height:34px;gap:5px;font-size:10px;border-radius:7px}
+ .shell>aside .nav svg{width:14px;height:14px}
+ .shell>main{padding:12px 10px 20px}
+ .shell>main>header{margin-bottom:11px;gap:7px}
+ .shell>main>header h1{font-size:19px;margin:3px 0 0}
+ .eyebrow,.nav-title{font-size:9px;letter-spacing:1px}
+ .shell>main>header .actions button{padding:7px 9px;font-size:11px}
+ .metrics{gap:7px;margin-bottom:12px}
+ .metric{padding:10px;border-radius:10px}
+ .metric span{font-size:10px;line-height:1.35}
+ .metric b{font-size:clamp(15px,4.5vw,19px);margin-top:6px}
+ .block{padding:12px;margin-bottom:12px;border-radius:11px}
+ .block p,.hint{font-size:11px;line-height:1.5}
+ h2{font-size:14px;margin-bottom:10px;gap:7px}
+ h2 svg{width:16px;height:16px}
+ label{font-size:11px}
+ input,.report-filters select{padding:9px;font-size:12px;margin-top:5px}
+ .primary,.secondary,.closing-action,.row-actions button{padding:9px 11px;font-size:11px}
+ .create-grid,.report-filters{gap:10px}
+ .table-wrap table{font-size:11px}
+ td,th{padding:10px 8px}
+ .pill{font-size:10px;padding:4px 7px}
+ .chart-head{gap:8px}
+ .chart-head p{font-size:11px}
+ .chart-range{padding:3px}
+ .chart-range button{min-height:31px;padding:5px;font-size:10px}
+ .chart-summary{gap:7px;margin:10px 0}
+ .chart-summary>div{padding:9px;border-radius:9px}
+ .chart-summary span{font-size:10px;margin-bottom:5px}
+ .chart-summary strong{font-size:15px}
+ .chart-canvas{overflow:hidden}
+ .chart-canvas svg{min-width:0;width:100%;height:auto;min-height:0}
+ .chart-legend{font-size:10px;margin:5px 0 8px;gap:10px}
+ .statline{padding:9px 0;font-size:11px}
+ .operator-header{padding:9px 11px;gap:7px}
+ .operator-header .brand strong{font-size:18px}
+ .operator-header .brand .mark{width:32px;height:32px}
+ .operator-header .actions{gap:6px}
+ .operator-header .actions button{padding:7px 9px;font-size:11px}
+ .operator-welcome{font-size:11px}
+ .operator-main{padding:12px 10px}
+ .operator-heading h1{font-size:19px;margin-bottom:9px}
+ .operator-metrics .metric{min-height:0}
+ .operator-tabs{gap:5px;margin-bottom:12px}
+ .operator-tabs button{padding:8px 10px;font-size:11px;border-radius:8px}
+ .login{padding:21px 16px}
+ .login h1{font-size:22px}
+ .login label{margin:13px 0}
+}
+@media(max-width:370px){
+ .shell>aside .nav{padding:6px;font-size:9px;gap:4px}
+ .shell>aside .nav svg{width:13px;height:13px}
+ .shell>main{padding:10px 8px}
+ .metric{padding:8px}
+ .metric b{font-size:15px}
+ .block{padding:10px}
+}
