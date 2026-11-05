@@ -190,6 +190,16 @@ const server=http.createServer(async(req,res)=>{
    if(typeof data.text!=='string'||!data.text.trim()||data.text.length>4000)throw Error('Mensagem inválida');
    if(data.replyId){const original=await client.getMessageById(String(data.replyId));if(!original||original.from!==saved.groupId&&original.to!==saved.groupId)throw Error('Mensagem original não encontrada neste grupo');await original.reply(data.text.trim(),saved.groupId)}else{await client.sendMessage(saved.groupId,data.text.trim())}return reply(res,200,{ok:true});
   }
+  if(route==='/complete-order'){
+   if(status!=='ready'||!saved.groupId)throw Error('WhatsApp desconectado');
+   const order=saved.orders[data.id];
+   if(!order||order.chatId!==saved.groupId||order.status!=='doing')throw Error('Serviço em andamento não encontrado');
+   const original=await client.getMessageById(order.id);
+   if(!original)throw Error('Mensagem original indisponível para resposta');
+   await original.reply('✅ Serviço concluído! Obrigado pela preferência.',saved.groupId);
+   order.status='done';order.completedAt=new Date().toISOString();save();
+   return reply(res,200,{ok:true});
+  }
   if(route==='/order'){
    const order=saved.orders[data.id];if(!order||order.chatId!==saved.groupId)throw Error('Pedido não encontrado');
    if(data.status==='doing'&&order.status==='pending')order.status='doing';
