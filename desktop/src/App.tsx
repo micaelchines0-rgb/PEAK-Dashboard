@@ -10,10 +10,19 @@ const blank:Input={client:'',phone:'',link:'',deposit:0,withdrawal:0,blogger:0};
 const currency=(v:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
 const number=(v:string)=>Number(v.replace(/\./g,'').replace(',','.'))||0;
 const cmd=<T,>(name:string,args?:Record<string,unknown>)=>invoke<T>(name,args);
+type OperatorSession={user_id:string;name:string;role:'admin'|'operator'};
 type DashboardSettings={theme:'black'|'light';accent:string;dragonName:string;penguinName:string;rates:Record<string,number>;dragonSiglas:string;penguinSiglas:string;pixKey:string;pixHolder:string;pixMessage:string};
 const defaultSettings:DashboardSettings={theme:'black',accent:'#8558f3',dragonName:'Dragão',penguinName:'Pinguim',rates:{D5:5,D7:7,D9:9,D11:11,P6:6,P8:8},dragonSiglas:'XW, 888, DY, WE, DZ, OKOK, ANJO, AJ, ANJO/AJ, 777, A8, VOY, W1, 91, EK, WP, M9, RF',penguinSiglas:'MANGA, T1, BOI, MK, Y8, AM, AE, BRA, AA, SQ, M8, GAME, SE, 555',pixKey:'81995882238',pixHolder:'MICAEL RICARDO',pixMessage:'MARCAR E ENVIAR O COMPROVANTE'};
 const loadSettings=():DashboardSettings=>{try{const raw=localStorage.getItem('peak-v11-settings');if(!raw)return defaultSettings;const parsed=JSON.parse(raw);return {...defaultSettings,...parsed,rates:{...defaultSettings.rates,...parsed.rates}}}catch{return defaultSettings}};
 function App(){
+ const [operator,setOperator]=useState<OperatorSession|null>(null);
+ const [loginUsername,setLoginUsername]=useState('');
+ const [loginPassword,setLoginPassword]=useState('');
+ const [loginBusy,setLoginBusy]=useState(false);
+ const [loginError,setLoginError]=useState('');
+ const doLogin=async(e:React.FormEvent)=>{e.preventDefault();setLoginBusy(true);setLoginError('');try{const user=await cmd<OperatorSession>('login_operator',{username:loginUsername,password:loginPassword});setOperator(user);setLoginPassword('')}catch(error){setLoginError(String(error))}finally{setLoginBusy(false)}};
+ const doLogout=async()=>{try{await cmd('logout_operator');setOperator(null);setOrders([]);setNotes('');setForm(blank);setSelected(null)}catch(error){setMessage(String(error))}};
+
  const[orders,setOrders]=useState<Order[]>([]),[form,setForm]=useState<Input>(blank),[selected,setSelected]=useState<number|null>(null);
  const[notes,setNotes]=useState(''),[search,setSearch]=useState(''),[message,setMessage]=useState(''),[generator,setGenerator]=useState(false);
  const[genMin,setGenMin]=useState(11),[genMax,setGenMax]=useState(15),[genCount,setGenCount]=useState(10),[generated,setGenerated]=useState<number[]>([]);
@@ -82,8 +91,8 @@ function App(){
  const stopSplit=()=>{dragging.current=false};
  const resetSplit=()=>setSplitWidth(0);
  const refresh=async()=>{try{setOrders(await cmd<Order[]>('list_orders'))}catch(e){setMessage(String(e))}};
- useEffect(()=>{refresh();cmd<string>('get_notes').then(setNotes).catch(e=>setMessage(String(e)))},[]);
- useEffect(()=>{const timer=setTimeout(()=>cmd('set_notes',{text:notes}).catch(e=>setMessage(String(e))),700);return()=>clearTimeout(timer)},[notes]);
+ useEffect(()=>{if(operator){void refresh();cmd<string>('get_notes').then(setNotes).catch(e=>setMessage(String(e)))}},[operator]);
+ useEffect(()=>{if(!operator)return;const timer=setTimeout(()=>cmd('set_notes',{text:notes}).catch(e=>setMessage(String(e))),700);return()=>clearTimeout(timer)},[notes,operator]);
  const totals=useMemo(()=>orders.reduce((a,o)=>({deposit:a.deposit+o.deposit,withdrawal:a.withdrawal+o.withdrawal,blogger:a.blogger+o.blogger}),{deposit:0,withdrawal:0,blogger:0}),[orders]);
  const profit=totals.withdrawal+totals.blogger-totals.deposit;
  const filtered=orders.filter(o=>[o.client,o.phone,o.link].some(s=>s.toLowerCase().includes(search.toLowerCase())));
@@ -100,11 +109,24 @@ function App(){
  const closing=async()=>{if(!confirm('Exportar fechamento e limpar operações após salvar?'))return;try{const file=await cmd<string>('export_closing');await refresh();setMessage('Fechamento salvo: '+file)}catch(e){setMessage(String(e))}};
  const copyPix=async()=>{const text=`📌 PIX CELULAR\n💠 ${settings.pixKey}\n🏷️ ${settings.pixHolder}\n\n💸 ${currency(priceTotal)}\n⚠️ ${settings.pixMessage}\n\n⏱️ Prazo para conclusão: de 30 min a 1h após o envio do comprovante.`;try{await navigator.clipboard.writeText(text);setMessage('Comanda copiada')}catch{setMessage('Não foi possível copiar')}};
  const make=()=>{if(genCount<1||genCount>500||genMin<0||genMax<genMin){setMessage('Confira os valores do gerador');return}setGenerated(Array.from({length:genCount},()=>Math.floor(Math.random()*(genMax-genMin+1))+genMin))};
+ if(!operator)return <div className={"shell theme-"+settings.theme} style={{'--user-accent':settings.accent,minHeight:'100vh',display:'grid',placeItems:'center'} as React.CSSProperties}>
+ <section className="card section" style={{width:'min(420px,calc(100vw - 32px))',padding:30}}>
+  <div className="brand" style={{marginBottom:26}}><span className="brand-mark">▲</span><div><strong>PEAK</strong><small>DASHBOARD · ACESSO DO OPERADOR</small></div></div>
+  <div className="eyebrow">IDENTIFICAÇÃO OBRIGATÓRIA</div><h2 style={{margin:'10px 0 6px'}}>Entrar na operação</h2>
+  <p style={{opacity:.7,marginBottom:22}}>Entre com seu usuário autorizado para registrar serviços.</p>
+  <form onSubmit={doLogin} className="form-grid" style={{display:'grid',gridTemplateColumns:'1fr'}}>
+   <label>Usuário<input type="text" autoComplete="username" required value={loginUsername} onChange={e=>setLoginEmail(e.target.value)} placeholder="Digite seu usuário"/></label>
+   <label>Senha<input type="password" autoComplete="current-password" required value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} placeholder="Sua senha"/></label>
+   {loginError&&<p role="alert" style={{color:'#ff7777',overflowWrap:'anywhere'}}>{loginError}</p>}
+   <button className="btn primary submit" type="submit" disabled={loginBusy}>{loginBusy?'Validando acesso...':'Entrar na PEAK Dashboard'}</button>
+  </form><small style={{opacity:.7}}>Sem cadastro? Solicite seu acesso ao administrador. O registro de serviços permanece bloqueado sem login.</small>
+ </section></div>;
  return <div className={"shell theme-"+settings.theme} style={{'--user-accent':settings.accent} as React.CSSProperties}>
  <aside className={sidebar?'sidebar':'sidebar collapsed'}>
   <div className="brand"><span className="brand-mark">▲</span><div><strong>PEAK</strong><small>DASHBOARD</small></div></div>
   <div className="nav-title">MENU PRINCIPAL</div>
   <button className="nav active"><Activity size={18}/> Visão geral</button>
+   <button className="nav" onClick={()=>void doLogout()}><X size={18}/> Sair ({operator.name})</button>
   <button className="nav" onClick={()=>setGenerator(true)}><Shuffle size={18}/> Gerador de depósitos</button>
   <button className="nav" onClick={()=>cmd('open_data_folder').catch(e=>setMessage(String(e)))}><Database size={18}/> Arquivos e dados</button>
   <button className="nav" onClick={()=>setSettingsOpen(true)}><Settings2 size={18}/> Configurações</button>\n  <div className="sidebar-bottom"><span className="status-dot"/> Banco de dados local <small>Versão 11.0.1</small></div>
