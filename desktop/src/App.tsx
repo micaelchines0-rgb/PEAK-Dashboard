@@ -24,7 +24,10 @@ function App(){
    if(c!==column)return rows;
    const next=[...rows];next[index]=value;
    // Remove blank extra rows when their values are erased, keeping two baseline fields.
-   if(index>=2&&value.trim()==='')next.splice(index,1);
+   if(index>=2&&value.trim()===''){
+    next.splice(index,1);
+    pendingCalcFocus.current=c+':'+(index-1);
+   }
    return next;
   }));
  };
@@ -42,7 +45,7 @@ function App(){
   const key=pendingCalcFocus.current;
   if(!key)return;
   const el=calcRefs.current[key];
-  if(el){el.focus();const scroller=el.parentElement;if(scroller)scroller.scrollTop=scroller.scrollHeight;pendingCalcFocus.current=null}
+  if(el){el.focus();el.scrollIntoView({block:'nearest'});pendingCalcFocus.current=null}
  },[calc]);
  const[updateInfo,setUpdateInfo]=useState<UpdateInfo|null>(null);
  const[updateBusy,setUpdateBusy]=useState(false);
@@ -110,7 +113,7 @@ function App(){
   <div className="columns" ref={splitRef} style={splitWidth?{gridTemplateColumns:"minmax(280px, "+splitWidth+"px) 12px minmax(420px, 1fr)"}:undefined}>
    <div className="left-col">
     <section className="card section notes-card"><div className="section-head"><div><span className="eyebrow">ANOTAÇÕES</span><h3>Bloco de notas</h3></div><button className="text-btn" onClick={()=>setNotes('')}>Limpar</button></div><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Suas anotações ficam salvas automaticamente..."/><small>↘ Arraste o canto inferior direito para redimensionar</small></section>
-    <section className="card section"><div className="section-head"><div><span className="eyebrow">FERRAMENTAS</span><h3>Calculadora rápida</h3></div></div><div className="calc-grid">{['Depósitos','Saques'].map((label,column)=><div className="calc-column" key={label}><label>{label}</label><div className="calc-scroll">{calc[column].map((value,index)=><input key={column+':'+index} ref={element=>{calcRefs.current[column+':'+index]=element}} placeholder="0,00" inputMode="decimal" value={value} onChange={e=>updateCalc(column,index,e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();nextCalc(column,index)}}}/>)}</div><strong>{currency(calc[column].reduce((sum,value)=>sum+number(value),0))}</strong></div>)}</div></section>
+    <section className="card section"><div className="section-head"><div><span className="eyebrow">FERRAMENTAS</span><h3>Calculadora rápida</h3></div><button type="button" className="text-btn" onClick={()=>{pendingCalcFocus.current=null;setCalc([['',''],['','']]);Object.values(calcRefs.current).forEach(input=>input?.blur())}}>Limpar</button></div><div className="calc-grid">{['Depósitos','Saques'].map((label,column)=><div className="calc-column" key={label}><label>{label}</label><div className="calc-scroll">{calc[column].map((value,index)=><input key={column+':'+index} ref={element=>{calcRefs.current[column+':'+index]=element}} placeholder="0,00" inputMode="decimal" value={value} onChange={e=>updateCalc(column,index,e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();nextCalc(column,index)}}}/>)}</div><strong>{currency(calc[column].reduce((sum,value)=>sum+number(value),0))}</strong></div>)}</div></section>
     <section className="card section"><div className="section-head"><div><span className="eyebrow">REGISTRO</span><h3>{selected?'Editar operação':'Nova operação'}</h3></div><span className="head-icon"><Plus size={19}/></span></div>
      <form onSubmit={save} className="form-grid">
       <label>Depósito (saída)<input type="number" step="0.01" min="0" value={form.deposit||''} onChange={e=>setForm({...form,deposit:Number(e.target.value)})} placeholder="0,00"/></label>
