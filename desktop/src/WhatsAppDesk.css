@@ -45,3 +45,6 @@
 }
 @media(min-width:951px) and (max-width:1200px){.shell .main{padding-right:310px!important}.shell .main .columns{grid-template-columns:minmax(220px,250px) 0 minmax(0,1fr)!important;gap:8px!important}.wa-chat{width:290px!important}}
 @media(max-width:950px){.shell .main .columns{display:flex!important;flex-direction:column!important}.shell .main .left-col{order:0!important}.shell .main .right-col{order:1!important}.wa-chat{position:relative!important;inset:auto!important;width:100%!important}}
+
+/* Conector WhatsApp real */
+.wa-connect{display:grid;gap:8px;margin-bottom:12px}.wa-connect p{font-size:12px;line-height:1.5;overflow-wrap:anywhere}.wa-connect select{width:100%;max-width:100%;padding:9px;border-radius:8px;background:#181821;color:#fff;border:1px solid #4b4659}.wa-qr{display:grid;justify-items:center;gap:5px}.wa-qr img{display:block;max-width:100%;height:auto;padding:8px;background:white;border-radius:10px}.wa-chat form{margin-top:12px;display:grid;gap:8px}.wa-chat form textarea{width:100%;min-height:65px;padding:10px;background:#11121b;color:#fff;border:1px solid #454457;border-radius:8px}.wa-connect code{overflow-wrap:anywhere}
