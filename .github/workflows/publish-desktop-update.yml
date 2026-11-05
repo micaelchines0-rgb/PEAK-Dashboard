@@ -1,5 +1,5 @@
 name: Publish PEAK Desktop Update
-# Release v11.2.1 after validating the Windows build.
+# Release v11.3.0 after validating the Windows build.
 on:
   push:
     branches: [feature/operator-login]
@@ -48,7 +48,7 @@ jobs:
         shell: pwsh
         run: |
           $version = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
-          if ($version -ne '11.2.1') { throw "Unexpected version: $version" }
+          if ($version -ne '11.3.0') { throw "Unexpected version: $version" }
           $installer = Get-ChildItem src-tauri/target/release/bundle/nsis/*.exe | Select-Object -First 1
           if (-not $installer) { throw 'Windows installer missing' }
           New-Item -ItemType Directory -Force release | Out-Null
@@ -66,4 +66,4 @@ jobs:
           if (gh release view $tag --repo "${{ github.repository }}" 2>$null) {
             throw "Release $tag already exists; refusing to overwrite"
           }
-          gh release create $tag release/*.exe release/*.sha256 --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "PEAK Dashboard $version" --notes "Atualização oficial do PEAK Dashboard Windows. Login obrigatório para operadores, sincronização com PEAK ADMIN, indicador compacto de comissão no cabeçalho e tela de login aprimorada. O instalador verifica integridade por SHA-256." --latest
+          gh release create $tag release/*.exe release/*.sha256 --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "PEAK Dashboard $version" --notes "Atualização oficial do PEAK Dashboard Windows. Login obrigatório para operadores, sincronização com PEAK ADMIN, interface experimental de WhatsApp por operador, painel de pedidos pendentes e alertas sonoros. A conexão com WhatsApp requer servidor externo configurado. O instalador verifica integridade por SHA-256." --latest
