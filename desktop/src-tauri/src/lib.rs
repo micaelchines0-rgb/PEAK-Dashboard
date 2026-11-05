@@ -40,11 +40,11 @@ fn current_operator()->Option<SessionView>{SESSION.lock().ok()?.as_ref().map(|s|
 #[tauri::command]
 fn logout_operator()->Result<(),String>{*SESSION.lock().map_err(|_|"Erro de sessão".to_string())?=None;Ok(())}
 #[tauri::command]
-fn login_operator(email:String,password:String)->Result<SessionView,String>{
- if email.trim().is_empty()||password.is_empty(){return Err("Informe e-mail e senha".into())}
+fn login_operator(username:String,password:String)->Result<SessionView,String>{
+ if username.trim().is_empty()||password.is_empty(){return Err("Informe usuário e senha".into())}
  let client=reqwest::blocking::Client::builder().timeout(std::time::Duration::from_secs(15)).build().map_err(|e|e.to_string())?;
  let response=client.post(format!("{SUPABASE_URL}/auth/v1/token?grant_type=password"))
-  .header("apikey",SUPABASE_PUBLIC_KEY).json(&serde_json::json!({"email":email.trim(),"password":password})).send().map_err(|_|"Não foi possível conectar ao servidor".to_string())?;
+  .header("apikey",SUPABASE_PUBLIC_KEY).json(&serde_json::json!({"email":format!("{}@operators.peak.invalid",username.trim().to_lowercase()),"password":password})).send().map_err(|_|"Não foi possível conectar ao servidor".to_string())?;
  let ok=response.status().is_success();let body:AuthReply=response.json().map_err(|_|"Resposta de autenticação inválida".to_string())?;
  if !ok{return Err(body.error_description.or(body.msg).unwrap_or("Credenciais inválidas".into()))}
  let token=body.access_token.ok_or("Sessão não recebida")?;
@@ -78,6 +78,33 @@ fn database()->Result<Connection,String>{
  if !has_owner {c.execute("ALTER TABLE orders ADD COLUMN operator_id TEXT",[]).map_err(|e|e.to_string())?;}
  Ok(c)
 }
+fn device_id(c:&Connection)->Result<String,String>{
+ let existing:Result<String,_>=c.query_row("SELECT v FROM meta WHERE k='device_id'",[],|r|r.get(0));
+ if let Ok(id)=existing{return Ok(id)}
+ let id=uuid::Uuid::new_v4().to_string();
+ c.execute("INSERT OR IGNORE INTO meta(k,v) VALUES('device_id',?)",params![id]).map_err(|e|e.to_string())?;
+ c.query_row("SELECT v FROM meta WHERE k='device_id'",[],|r|r.get(0)).map_err(|e|e.to_string())
+}
+fn sync_operation(session:&LoginSession,device:&str,id:i64,action:&str,input:Option<&OrderInput>)->Result<(),String>{
+ let mut body=serde_json::json!({"action":action,"device_id":device,"local_order_id":id});
+ if let Some(x)=input{
+  body["client"]=serde_json::json!(x.client.trim());
+  body["phone"]=serde_json::json!(x.phone);
+  body["link"]=serde_json::json!(x.link);
+  body["deposit"]=serde_json::json!(x.deposit);
+  body["withdrawal"]=serde_json::json!(x.withdrawal);
+  body["blogger"]=serde_json::json!(x.blogger);
+ }
+ let client=reqwest::blocking::Client::builder().timeout(std::time::Duration::from_secs(15)).build().map_err(|e|e.to_string())?;
+ let response=client.post(format!("{SUPABASE_URL}/functions/v1/peak-desktop-operations"))
+  .header("apikey",SUPABASE_PUBLIC_KEY).bearer_auth(&session.access_token).json(&body)
+  .send().map_err(|_|"Sem internet: serviço não foi confirmado".to_string())?;
+ if !response.status().is_success(){
+  let value:serde_json::Value=response.json().unwrap_or_default();
+  return Err(value.get("error").and_then(|v|v.as_str()).unwrap_or("Servidor recusou a operação").to_string())
+ }
+ Ok(())
+}
 fn read_orders(c:&Connection,session:&LoginSession)->Result<Vec<Order>,String>{
  let mut stmt=c.prepare("SELECT id,created,client,COALESCE(phone,''),COALESCE(link,''),deposit,withdrawal,blogger FROM orders WHERE operator_id=? OR (?=1 AND operator_id IS NULL) ORDER BY id DESC").map_err(|e|e.to_string())?;
  let iter=stmt.query_map(params![session.user_id,if session.role=="admin"{1}else{0}],|r|Ok(Order{id:r.get(0)?,created:r.get(1)?,client:r.get(2)?,phone:r.get(3)?,link:r.get(4)?,deposit:r.get(5)?,withdrawal:r.get(6)?,blogger:r.get(7)?})).map_err(|e|e.to_string())?;
@@ -92,15 +119,31 @@ fn validate(x:&OrderInput)->Result<(),String>{
 fn list_orders()->Result<Vec<Order>,String>{let session=authenticated()?;read_orders(&database()?,&session)}
 #[tauri::command]
 fn save_order(input:OrderInput,id:Option<i64>)->Result<(),String>{
- let session=authenticated()?;validate(&input)?;let c=database()?;
- if let Some(id)=id {
-  c.execute("UPDATE orders SET client=?,phone=?,link=?,deposit=?,withdrawal=?,blogger=? WHERE id=? AND (operator_id=? OR (?=1 AND operator_id IS NULL))",params![input.client.trim(),input.phone,input.link,input.deposit,input.withdrawal,input.blogger,id,session.user_id,if session.role=="admin"{1}else{0}]).map_err(|e|e.to_string())?;
+ let session=authenticated()?;validate(&input)?;let mut c=database()?;let device=device_id(&c)?;
+ let tx=c.transaction().map_err(|e|e.to_string())?;
+ let local_id=if let Some(id)=id{
+  let owner:Result<String,_>=tx.query_row("SELECT operator_id FROM orders WHERE id=?",params![id],|r|r.get(0));
+  if owner.ok().as_deref()!=Some(session.user_id.as_str()){return Err("Serviço não pertence ao operador".into())}
+  tx.execute("UPDATE orders SET client=?,phone=?,link=?,deposit=?,withdrawal=?,blogger=? WHERE id=? AND operator_id=?",params![input.client.trim(),input.phone,input.link,input.deposit,input.withdrawal,input.blogger,id,session.user_id]).map_err(|e|e.to_string())?;
+  id
  }else{
-  c.execute("INSERT INTO orders(created,client,phone,link,deposit,withdrawal,blogger,operator_id) VALUES(?,?,?,?,?,?,?,?)",params![chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string(),input.client.trim(),input.phone,input.link,input.deposit,input.withdrawal,input.blogger,session.user_id]).map_err(|e|e.to_string())?;
- }Ok(())
+  tx.execute("INSERT INTO orders(created,client,phone,link,deposit,withdrawal,blogger,operator_id) VALUES(?,?,?,?,?,?,?,?)",params![chrono::Local::now().to_rfc3339(),input.client.trim(),input.phone,input.link,input.deposit,input.withdrawal,input.blogger,session.user_id]).map_err(|e|e.to_string())?;
+  tx.last_insert_rowid()
+ };
+ sync_operation(&session,&device,local_id,"upsert",Some(&input))?;
+ tx.commit().map_err(|e|e.to_string())?;
+ Ok(())
 }
 #[tauri::command]
-fn delete_order(id:i64)->Result<(),String>{let session=authenticated()?;database()?.execute("DELETE FROM orders WHERE id=? AND (operator_id=? OR (?=1 AND operator_id IS NULL))",params![id,session.user_id,if session.role=="admin"{1}else{0}]).map_err(|e|e.to_string())?;Ok(())}
+fn delete_order(id:i64)->Result<(),String>{
+ let session=authenticated()?;let mut c=database()?;let device=device_id(&c)?;
+ let tx=c.transaction().map_err(|e|e.to_string())?;
+ let owner:Result<String,_>=tx.query_row("SELECT operator_id FROM orders WHERE id=?",params![id],|r|r.get(0));
+ if owner.ok().as_deref()!=Some(session.user_id.as_str()){return Err("Serviço não pertence ao operador".into())}
+ sync_operation(&session,&device,id,"delete",None)?;
+ tx.execute("DELETE FROM orders WHERE id=? AND operator_id=?",params![id,session.user_id]).map_err(|e|e.to_string())?;
+ tx.commit().map_err(|e|e.to_string())?;Ok(())
+}
 #[tauri::command]
 fn get_notes()->Result<String,String>{
  authenticated()?;let c=database()?;let mut stmt=c.prepare("SELECT v FROM meta WHERE k='notes'").map_err(|e|e.to_string())?;
