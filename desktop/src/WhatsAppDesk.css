@@ -33,3 +33,15 @@
 .wa-simulator{position:fixed!important;top:70px!important;right:375px!important;left:auto!important;z-index:60!important;width:360px!important}
 @media(max-width:1200px){.wa-chat{width:290px!important}.shell .main{padding-right:310px!important}.wa-simulator{right:310px!important}}
 @media(max-width:950px){.wa-chat{position:relative!important;inset:auto!important;width:100%!important;min-height:300px!important;max-height:420px!important}.shell .main{padding-right:12px!important}.wa-columns{display:flex!important;flex-direction:column-reverse!important;gap:12px}.wa-simulator{position:relative!important;inset:auto!important;width:100%!important}}
+
+/* V11.2.8: três áreas estáveis — ferramentas esquerda, operações centro, WhatsApp direita */
+@media(min-width:951px){
+.shell .main{padding-right:365px!important}
+.shell .main .columns{display:grid!important;grid-template-columns:minmax(255px,300px) 8px minmax(0,1fr)!important;gap:12px!important;align-items:start!important}
+.shell .main .left-col{grid-column:1!important;grid-row:1!important;width:auto!important;min-width:0!important;order:0!important}
+.shell .main .column-resizer{grid-column:2!important;grid-row:1!important;display:none!important}
+.shell .main .right-col{grid-column:3!important;grid-row:1!important;width:auto!important;min-width:0!important;order:0!important}
+.wa-chat{position:fixed!important;top:12px!important;right:12px!important;bottom:12px!important;width:340px!important;z-index:45!important}
+}
+@media(min-width:951px) and (max-width:1200px){.shell .main{padding-right:310px!important}.shell .main .columns{grid-template-columns:minmax(220px,250px) 0 minmax(0,1fr)!important;gap:8px!important}.wa-chat{width:290px!important}}
+@media(max-width:950px){.shell .main .columns{display:flex!important;flex-direction:column!important}.shell .main .left-col{order:0!important}.shell .main .right-col{order:1!important}.wa-chat{position:relative!important;inset:auto!important;width:100%!important}}
