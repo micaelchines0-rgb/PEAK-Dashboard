@@ -18,7 +18,7 @@ const token=fs.readFileSync(tokenPath,'utf8').trim();
 const port=Number(process.env.PEAK_PORT||38741);
 const bind=process.env.PEAK_BIND||'127.0.0.1';
 if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Porta inválida');
-if(!/^(127\.0\.0\.1|100\.(?:[0-9]{1,3}\.){3}[0-9]{1,3})$/.test(bind))throw Error('Use loopback ou IP Tailscale 100.x.y.z');
+if(!/^(127\.0\.0\.1|100\.(?:[0-9]{1,3}\.){2}[0-9]{1,3})$/.test(bind))throw Error('Use loopback ou IP Tailscale 100.x.y.z');
 const statePath=path.join(base,'state.json');
 let saved={groupId:'',orders:{}};
 try{saved={...saved,...JSON.parse(fs.readFileSync(statePath,'utf8'))}}catch{}
