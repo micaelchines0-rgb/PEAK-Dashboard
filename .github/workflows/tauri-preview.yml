@@ -32,6 +32,24 @@ jobs:
           Copy-Item ../PEAK.ico src-tauri/icons/icon.ico
       - name: Install JavaScript dependencies
         run: npm install
+      - name: Prepare WhatsApp runtime resources
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Push-Location whatsapp-bridge
+          try {
+            npm.cmd install --omit=dev
+            if ($LASTEXITCODE -ne 0) { throw 'WhatsApp dependencies failed' }
+            New-Item -ItemType Directory -Force dist | Out-Null
+            Copy-Item server.mjs dist/server.mjs -Force
+            Copy-Item node_modules dist/node_modules -Recurse -Force
+            Copy-Item (Get-Command node.exe).Source dist/node.exe -Force
+            npx.cmd --no-install puppeteer browsers install chrome --path dist/puppeteer-cache
+            if ($LASTEXITCODE -ne 0) { throw 'Chromium installation failed' }
+            if (-not (Test-Path dist/puppeteer-cache/chrome)) { throw 'Chromium resource missing' }
+          } finally {
+            Pop-Location
+          }
       - name: Build Windows NSIS installer
         run: npm run tauri build -- --bundles nsis
       - name: Upload test installer
