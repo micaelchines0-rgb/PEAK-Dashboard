@@ -34,12 +34,12 @@ export default function WhatsAppDesk(){
  return <aside className="wa-desk" aria-label="Central WhatsApp">
   <div className="wa-title"><div><span className="eyebrow">CENTRAL DE MENSAGENS</span><h3>WhatsApp dos operadores</h3></div><span className="wa-preview">{connection?.status==='ready'?'CONECTADO':'DESCONECTADO'}</span></div>
   <div className="wa-connect">
-   <p>{connection?.status==='ready'?'Número conectado: '+connection.phone:'Conecte seu WhatsApp pessoal pelo QR Code. O serviço local precisa estar aberto.'}</p>
+   <p>{connection?.status==='ready'?'Número conectado: '+connection.phone:'Conecte seu WhatsApp pessoal pelo QR Code. A Dashboard inicia a conexão automaticamente.'}</p>
    {connection?.qr&&<div className="wa-qr"><img src={connection.qr} alt="QR Code de conexão do WhatsApp" width="220" height="220"/><p>No celular: Aparelhos conectados → Conectar aparelho</p></div>}
    {connection?.status==='ready'&&<div><label>Grupo das blogueiras<select value={connection.groupId||''} onChange={e=>void action('select',{groupId:e.target.value})} disabled={busy}><option value="">Selecione um grupo</option>{connection.groups.map(g=><option value={g.id} key={g.id}>{g.name}</option>)}</select></label><button className="btn ghost" onClick={()=>void action('groups',{})} disabled={busy}>Atualizar grupos</button></div>}
    {connection?.lastError&&<p role="alert">{connection.lastError}</p>}
    {error&&<p role="alert">{error}</p>}
-   {!connection&&<p>Para iniciar: na pasta <code>desktop/whatsapp-bridge</code>, execute <code>npm install</code> e <code>npm start</code>. Node.js é necessário.</p>}
+   {!connection&&<p>Aguardando o conector iniciar. Se o aviso persistir, reinstale a versão atualizada da PEAK Dashboard.</p>}
    <label className="wa-sound"><input type="checkbox" checked={sound} onChange={e=>setSound(e.target.checked)}/> Aviso sonoro de novos pedidos</label>
   </div>
   <div className="wa-columns">
