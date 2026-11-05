@@ -129,7 +129,7 @@ function App(){
    </div>
    <div className="column-resizer" role="separator" title="Arraste para ajustar a largura. Clique duas vezes para restaurar." onPointerDown={startSplit} onPointerMove={moveSplit} onPointerUp={stopSplit} onLostPointerCapture={stopSplit} onDoubleClick={resetSplit}><span/></div>
    <div className="right-col">
-  <WhatsAppDesk/>
+  
    <section className="card section commands-top"><div className="section-head"><div><span className="eyebrow">COMANDAS</span><h3>{settings.dragonName} & {settings.penguinName}</h3></div></div>
    <div className="commands-layout">
     <div className="price-group"><h4 className="green">🐉 {settings.dragonName}</h4><div className="price-inputs">{['D5','D7','D9','D11'].map(t=><label key={t}>{t}<input type="number" min="0" value={prices[t]||''} disabled={activeGroup!==null&&activeGroup!==t.charAt(0)} onChange={e=>setPrices(p=>({...p,[t]:Number(e.target.value)}))} placeholder="0"/></label>)}</div></div>
