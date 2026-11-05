@@ -15,11 +15,11 @@ const loadSettings=():DashboardSettings=>{try{const raw=localStorage.getItem('pe
 type OperatorSession={user_id:string;name:string;role:'admin'|'operator'};
 function App(){
  const [operator,setOperator]=useState<OperatorSession|null>(null);
- const [loginEmail,setLoginEmail]=useState('');
+ const [loginUsername,setLoginEmail]=useState('');
  const [loginPassword,setLoginPassword]=useState('');
  const [loginBusy,setLoginBusy]=useState(false);
  const [loginError,setLoginError]=useState('');
- const doLogin=async(e:React.FormEvent)=>{e.preventDefault();setLoginBusy(true);setLoginError('');try{const user=await cmd<OperatorSession>('login_operator',{email:loginEmail,password:loginPassword});setOperator(user);setLoginPassword('');}catch(error){setLoginError(String(error))}finally{setLoginBusy(false)}};
+ const doLogin=async(e:React.FormEvent)=>{e.preventDefault();setLoginBusy(true);setLoginError('');try{const user=await cmd<OperatorSession>('login_operator',{username:loginUsername,password:loginPassword});setOperator(user);setLoginPassword('');}catch(error){setLoginError(String(error))}finally{setLoginBusy(false)}};
  const doLogout=async()=>{await cmd('logout_operator');setOperator(null);setOrders([]);setNotes('');setForm(blank);setSelected(null)};
 
  const[orders,setOrders]=useState<Order[]>([]),[form,setForm]=useState<Input>(blank),[selected,setSelected]=useState<number|null>(null);
@@ -114,7 +114,7 @@ function App(){
   <div className="eyebrow">IDENTIFICAÇÃO OBRIGATÓRIA</div><h2 style={{margin:'10px 0 6px'}}>Entrar na operação</h2>
   <p style={{opacity:.7,marginBottom:22}}>Entre com seu usuário autorizado para registrar serviços.</p>
   <form onSubmit={doLogin} className="form-grid" style={{display:'grid',gridTemplateColumns:'1fr'}}>
-   <label>E-mail<input type="email" autoComplete="username" required value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} placeholder="operador@exemplo.com"/></label>
+   <label>Usuário<input type="text" autoComplete="username" required value={loginUsername} onChange={e=>setLoginEmail(e.target.value)} placeholder="davi"/></label>
    <label>Senha<input type="password" autoComplete="current-password" required value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} placeholder="Sua senha"/></label>
    {loginError&&<p role="alert" style={{color:'#ff7777',overflowWrap:'anywhere'}}>{loginError}</p>}
    <button className="btn primary submit" type="submit" disabled={loginBusy}>{loginBusy?'Validando acesso...':'Entrar na PEAK Dashboard'}</button>
