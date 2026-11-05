@@ -1,0 +1,13 @@
+{
+  "name": "peak-whatsapp-bridge",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.34.1",
+    "qrcode": "^1.5.4"
+  }
+}
