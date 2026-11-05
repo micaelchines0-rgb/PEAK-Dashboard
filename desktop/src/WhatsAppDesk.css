@@ -22,3 +22,14 @@
 .wa-chat{grid-column:2!important;grid-row:1!important}
 .wa-operations{grid-column:1!important;grid-row:1!important}
 @media(max-width:1000px){.wa-columns{grid-template-columns:1fr!important}.wa-operations{grid-column:1!important;grid-row:1!important}.wa-chat{grid-column:1!important;grid-row:2!important}}
+
+/* V11.2.6: ordem vertical comandas > indicadores > histórico > pendentes > execução; chat fixo à direita */
+.wa-desk{display:block!important;height:auto!important;min-height:0!important;overflow:visible!important;padding:0!important;margin:14px 0!important;background:transparent!important;border:0!important}
+.wa-columns{display:block!important;overflow:visible!important}
+.wa-operations{display:flex!important;flex-direction:column;gap:12px;min-height:0!important}
+.wa-pending,.wa-doing{width:100%;min-height:210px!important;max-height:360px!important;background:#15151d!important}
+.wa-chat{position:fixed!important;right:12px!important;top:12px!important;bottom:12px!important;width:350px!important;max-height:none!important;min-height:0!important;z-index:45!important;background:#15151d!important;box-shadow:-8px 0 35px #0008;overflow-y:auto!important}
+.shell .main{padding-right:375px!important}
+.wa-simulator{position:fixed!important;top:70px!important;right:375px!important;left:auto!important;z-index:60!important;width:360px!important}
+@media(max-width:1200px){.wa-chat{width:290px!important}.shell .main{padding-right:310px!important}.wa-simulator{right:310px!important}}
+@media(max-width:950px){.wa-chat{position:relative!important;inset:auto!important;width:100%!important;min-height:300px!important;max-height:420px!important}.shell .main{padding-right:12px!important}.wa-columns{display:flex!important;flex-direction:column-reverse!important;gap:12px}.wa-simulator{position:relative!important;inset:auto!important;width:100%!important}}
