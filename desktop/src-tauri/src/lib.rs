@@ -220,7 +220,7 @@ fn bridge_root(app:&tauri::AppHandle)->Result<PathBuf,String>{
  #[cfg(windows)]
  let resource={
   let raw=resource.to_string_lossy();
-  match raw.strip_prefix(r"\\?\\") {
+  match raw.strip_prefix(r"\\?\") {
    Some(stripped)=>PathBuf::from(stripped),
    None=>resource,
   }
