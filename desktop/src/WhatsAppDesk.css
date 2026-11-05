@@ -98,3 +98,14 @@
 .wa-sender-line{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0}
 .wa-sender-line b{font-size:13px}
 .wa-sender-line span{font-size:11px;opacity:.75;overflow-wrap:anywhere}
+
+/* Balões compactos no estilo de conversa, com cor consistente por participante. */
+.wa-chat .wa-messages{display:flex;flex-direction:column;gap:5px}
+.wa-chat .wa-messages>h4{flex:0 0 auto}
+.wa-chat .wa-item.wa-bubble{box-sizing:border-box;align-self:flex-start;width:fit-content;max-width:88%;min-width:0;margin:0!important;padding:6px 9px!important;border-radius:11px 11px 11px 3px;background:#222532;border:1px solid #35384a;overflow-wrap:anywhere}
+.wa-chat .wa-item.wa-bubble.wa-outgoing{align-self:flex-end;background:#253c39;border-color:#365b53;border-radius:11px 11px 3px 11px}
+.wa-chat .wa-bubble .wa-sender-line{gap:5px;line-height:1.2}
+.wa-chat .wa-bubble .wa-sender-line b{display:inline;color:var(--wa-sender-color);font-size:11px}
+.wa-chat .wa-bubble .wa-sender-line span{font-size:10px}
+.wa-chat .wa-bubble p{font-size:12px;line-height:1.35;margin:4px 0 2px;white-space:pre-wrap}
+.wa-chat .wa-bubble small{font-size:9px;line-height:1.2;margin:0;text-align:right;opacity:.6}
