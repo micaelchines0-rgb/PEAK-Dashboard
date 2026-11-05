@@ -92,3 +92,5 @@
 .wa-chat .wa-qr{padding:12px 0;max-width:100%}
 .wa-chat .wa-recovery{display:flex;flex-wrap:wrap;gap:6px}
 .wa-chat .wa-recovery pre{width:100%}
+
+.wa-server-config{margin:8px 0}.wa-server-form{display:grid;gap:8px;padding:10px;border:1px solid #454457;border-radius:9px}.wa-server-form label{display:block;font-size:12px}.wa-server-form input{width:100%;padding:9px;margin-top:4px;background:#11121b;color:#f5f5fa;border:1px solid #454457;border-radius:7px}.wa-server-form .btn{max-width:100%}
